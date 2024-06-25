@@ -1,24 +1,46 @@
 import numpy as np
 import torch
+import tqdm
+
+# tqdm
+def tqdm_enumerate(iterator):
+  for i, x in enumerate(tqdm.tqdm(iterator)):
+    yield i, x
 
 def get_activations(model, dl):
   activations = []
+  print("Getting Activations ...")
 
+  # hook to get input features of a layer 
   def activation_hook(module, input, output):
-    activations.append(output.detach().cpu().numpy().reshape(output.shape[0], -1))
+    in_feats = input[0].detach().cpu().numpy()
+    activations.append(in_feats)
     return
 
-  model.model.layer4.register_forward_hook(activation_hook)
+  # register hook at the final classification layer (input of final layer == activations of penultimate/representation layer)
+  h1 = model.linear.register_forward_hook(activation_hook)
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   
   model.eval()
   with torch.no_grad():
-    for images, labels, in dl:
+    for images, labels, in tqdm.tqdm(dl):
       images = images.to(device)
       labels = labels.to(device)
       _ = model(images)
 
-  return np.concatenate(activations, axis=0)
+  h1.remove()
+
+  # remove last batch if it has less than BS points
+  if len(activations[-1]) != len(activations[0]):
+    activations = activations[:-1]
+
+  # reshape to remove batches
+  activations_arr = np.array(activations)
+  NB, BS, A = activations_arr.shape
+  activations_r = activations_arr.reshape(NB*BS, A)
+  
+  print("Activations Shape: ",activations_r.shape)
+  return activations_r
 
 def main(gpu=False):
   # import resnet50 from robustness lib
@@ -35,7 +57,7 @@ def main(gpu=False):
     # get from pytorch
     from torchvision.models import resnet50
     model = resnet50(weights=None)
-    
+
 
   return
 
