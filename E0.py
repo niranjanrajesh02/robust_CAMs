@@ -52,4 +52,10 @@ train_args = defaults.check_and_fill_args(train_args,
                         defaults.TRAINING_ARGS, CIFAR)
 train_args = defaults.check_and_fill_args(train_args,  defaults.PGD_ARGS, CIFAR)
 
-train.train_model(train_args, m, (train_loader, val_loader), store=out_store)
+def main():
+  print("Training")
+  train.train_model(train_args, m, (train_loader, val_loader), store=out_store)
+  print("Done training")
+
+if __name__ == '__main__':
+  main()

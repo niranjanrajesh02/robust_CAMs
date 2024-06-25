@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p gpu
+#SBATCH -p gpu_v100_2
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --mem 512M
@@ -10,5 +10,4 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mail-user=niranjanrajesh02@gmail.com
 #SBATCH --mail-type=ALL
-spack load cuda@11.8.0%gcc@11.2.0
-srun ./E0.py
+srun python /home/venkat/niranjan/robust_CAMs/E0.py
