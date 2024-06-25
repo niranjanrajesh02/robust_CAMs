@@ -8,6 +8,4 @@
 #SBATCH -o out.log
 #SBATCH -e err.log
 #SBATCH --gres=gpu:1
-#SBATCH --mail-user=niranjanrajesh02@gmail.com
-#SBATCH --mail-type=ALL
 srun python /home/venkat/niranjan/robust_CAMs/E0.py
