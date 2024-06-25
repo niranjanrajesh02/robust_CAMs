@@ -39,7 +39,7 @@ def train_model(adv_train=False, m=None, train_loader=None, val_loader=None):
       'out_dir': "cifar_r50_train",
       'adv_train': 0,
       'adv_eval': 0,
-      'epochs': 2,
+      'epochs': 150,
       'batch_size': 128,
       'weight_decay': 5e-4,
       'step_lr': 50,
@@ -47,7 +47,7 @@ def train_model(adv_train=False, m=None, train_loader=None, val_loader=None):
       'momentum': 0.9,
       'constraint': '2',
       'eps': 0.5,
-      'attack_lr': 0.1,
+      'attack_lr': 0.1, #step size of attack
       'attack_steps': 7,
       'save_ckpt_iters': -1
   }
