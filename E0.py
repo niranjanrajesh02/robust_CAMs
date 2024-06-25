@@ -21,12 +21,12 @@ import cox.store
 from cox import utils
 from cox import store
 
-NUM_WORKERS = 10
+NUM_WORKERS = 1
 BATCH_SIZE = 128
 ds = CIFAR('./data')
 m, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds)
 train_loader, val_loader = ds.make_loaders(batch_size=BATCH_SIZE, workers=NUM_WORKERS, data_aug=False)
-out_store = cox.store.Store('./')
+
 
 # Hard-coded base parameters - https://robustness.readthedocs.io/en/latest/api/robustness.defaults.html#module-robustness.defaults
 train_kwargs = {
@@ -54,7 +54,7 @@ train_args = defaults.check_and_fill_args(train_args,  defaults.PGD_ARGS, CIFAR)
 
 def main():
   print("Training")
-  train.train_model(train_args, m, (train_loader, val_loader), store=out_store)
+  train.train_model(train_args, m, (train_loader, val_loader))
   print("Done training")
 
 if __name__ == '__main__':
