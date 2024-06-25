@@ -4,8 +4,8 @@
 #SBATCH -n 1
 #SBATCH --mem 20G
 #SBATCH -t 0-23:59 # time (D-HH:MM)
-#SBATCH --job-name="robCAM_train"
-#SBATCH -o out.log
-#SBATCH -e err.log
+#SBATCH --job-name="robCAM_adv_train"
+#SBATCH -o aout.log
+#SBATCH -e aerr.log
 #SBATCH --gres=gpu:1
 srun python /home/venkat/niranjan/robust_CAMs/E0.py --adv_train

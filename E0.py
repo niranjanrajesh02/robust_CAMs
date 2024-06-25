@@ -45,6 +45,7 @@ def train_model(adv_train=False, m=None, train_loader=None, val_loader=None):
       'step_lr': 50,
       'lr': 0.1,
       'momentum': 0.9,
+      'constraint': '2',
       'eps': 0.5,
       'attack_lr': 0.1,
       'attack_steps': 7,
