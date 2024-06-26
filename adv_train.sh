@@ -8,4 +8,4 @@
 #SBATCH -o aout.log
 #SBATCH -e aerr.log
 #SBATCH --gres=gpu:1
-srun python /home/venkat/niranjan/robust_CAMs/E0.py --adv_train
+srun python /home/venkat/niranjan/robust_CAMs/train.py --adv_train
