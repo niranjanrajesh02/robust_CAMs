@@ -72,11 +72,11 @@ def main():
   
   model_ext = ''
   if args.model_type == 'adv_trained':
-    model_ext = '_adv_train'
+    model_ext = '_adv'
   elif args.model_type == 'robust':
     model_ext = '_robust'
 
-  model_path = f'/home/venkat/niranjan/robust_CAMs/cifar_r50{model_ext}/checkpoint.pt.latest'
+  model_path = f'/home/venkat/niranjan/robust_CAMs/cifar_r50{model_ext}_train/checkpoint.pt.latest'
   print(f"Trying to load Model at Path: {model_path}")
 
   model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
