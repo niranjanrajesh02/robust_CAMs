@@ -25,7 +25,7 @@ EPS = 0.1
 
 
 
-def get_classwise_acc(m, test_loader):
+def get_classwise_acc(m, test_loader, attack_kwargs):
   class_correct = {i: 0 for i in range(10)}
   class_total = {i: 0 for i in range(10)}
 
@@ -89,7 +89,7 @@ def main():
   model.eval()
 
 
-  classwise_acc = get_classwise_acc(model, test_loader)
+  classwise_acc = get_classwise_acc(model, test_loader, attack_kwargs)
   print("Classwise Accuracy: ", classwise_acc)
 
   # store classwise accuracy as a pickle file
