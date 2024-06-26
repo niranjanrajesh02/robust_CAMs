@@ -122,7 +122,7 @@ def robust_train():
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor()])
    
-    data_path = './data/d_robust_cifar'
+    data_path = './data/d_robust_CIFAR'
 
     ims = torch.cat(torch.load(os.path.join(data_path, f"CIFAR_ims")))
     labs = torch.cat(torch.load(os.path.join(data_path, f"CIFAR_lab")))
