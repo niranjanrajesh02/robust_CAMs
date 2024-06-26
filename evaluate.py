@@ -4,14 +4,19 @@ import os
 ds = CIFAR('./data')
 import argparse
 import torch
+import cox.store
+import pickle
+
+EPS = 0.25
 
 attack_kwargs = {
     'constraint': '2',  # l-inf constraint
-    'eps': 0.25,  # epsilon value for l-inf
+    'eps': EPS,  # epsilon value for l-inf
     'step_size': 0.1,  # step size for PGD
     'iterations': 10,  # number of iterations for PGD
     'do_tqdm': True
 }
+
 
 def get_classwise_acc(m, test_loader):
   class_correct = {i: 0 for i in range(10)}
@@ -55,8 +60,7 @@ def main():
   elif args.model_type == 'robust':
     model_ext = 'robust'
 
-  model_path = f'cifar_r50_{model_ext}/checkpoint.pt.latest'
-
+  model_path = f'/home/venkat/niranjan/robust_CAMs/cifar_r50_{model_ext}/checkpoint.pt.latest'
 
   if not os.path.exists(model_path):
     print("Model path does not exist")
@@ -74,10 +78,11 @@ def main():
   classwise_acc = get_classwise_acc(model, test_loader)
   print("Classwise Accuracy: ", classwise_acc)
 
-
+  # store classwise accuracy as a pickle file
+  with open(f'/home/venkat/niranjan/robust_CAMs/cifar_r50_{model_ext}/classwise_acc_e{EPS}.pkl', 'wb') as f:
+    pickle.dump(classwise_acc, f)
   
-
-
+  print("Classwise Accuracy stored as pickle file")
 
   
   return
