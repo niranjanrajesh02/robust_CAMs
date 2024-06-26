@@ -8,4 +8,4 @@
 #SBATCH -o ev_out.log
 #SBATCH -e ev_err.log
 #SBATCH --gres=gpu:1
-srun python /home/venkat/niranjan/robust_CAMs/evaluate.py
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --eps 0.1

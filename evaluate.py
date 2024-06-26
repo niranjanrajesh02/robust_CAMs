@@ -21,15 +21,8 @@ import cox.store
 import pickle
 from tqdm import tqdm
 
-EPS = 0.25
+EPS = 0.1
 
-attack_kwargs = {
-    'constraint': '2',  # l-inf constraint
-    'eps': EPS,  # epsilon value for l-inf
-    'step_size': 0.1,  # step size for PGD
-    'iterations': 10,  # number of iterations for PGD
-    'do_tqdm': True
-}
 
 
 def get_classwise_acc(m, test_loader):
@@ -66,8 +59,18 @@ def get_classwise_acc(m, test_loader):
 def main():
   parser = argparse.ArgumentParser(description='Train a model on CIFAR')
   parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
-
+  parser.add_argument('--eps', type=float, help='Epsilon value for adversarial training', default=0.5)
   args = parser.parse_args()
+
+  
+  attack_kwargs = {
+      'constraint': '2',  # l-inf constraint
+      'eps': args.eps,  # epsilon value for l-inf
+      'step_size': 0.1,  # step size for PGD
+      'iterations': 10,  # number of iterations for PGD
+      'do_tqdm': False
+  }
+
   assert args.model_type in ['standard', 'adv_trained', 'robust'], "Invalid model type"
   
   model_ext = ''
@@ -90,7 +93,7 @@ def main():
   print("Classwise Accuracy: ", classwise_acc)
 
   # store classwise accuracy as a pickle file
-  with open(f'/home/venkat/niranjan/robust_CAMs/cifar_r50_{model_ext}/classwise_acc_e{EPS}.pkl', 'wb') as f:
+  with open(f'/home/venkat/niranjan/robust_CAMs/cifar_r50_{model_ext}_train/classwise_acc_e{EPS}.pkl', 'wb') as f:
     pickle.dump(classwise_acc, f)
   
   print("Classwise Accuracy stored as pickle file")
