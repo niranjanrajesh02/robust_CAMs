@@ -1,14 +1,5 @@
-from robustness import model_utils, datasets, train, defaults
-from robustness.datasets import CIFAR
-import os
-ds = CIFAR('./data')
-import argparse
-import torch
-import cox.store
-import pickle
-from tqdm import tqdm
 import sys
-
+import torch
 def load_state_dict_from_url(*args, **kwargs):
     return torch.hub.load_state_dict_from_url(*args, **kwargs)
 
@@ -19,6 +10,16 @@ class DummyModule:
 
 # Replace the faulty import
 sys.modules['torchvision.models.utils'] = DummyModule()
+
+from robustness import model_utils, datasets, train, defaults
+from robustness.datasets import CIFAR
+import os
+ds = CIFAR('./data')
+import argparse
+import torch
+import cox.store
+import pickle
+from tqdm import tqdm
 
 EPS = 0.25
 
