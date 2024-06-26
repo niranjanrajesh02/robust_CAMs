@@ -6,7 +6,7 @@ import argparse
 import torch
 import cox.store
 import pickle
-
+from tqdm import tqdm
 EPS = 0.25
 
 attack_kwargs = {
@@ -25,7 +25,9 @@ def get_classwise_acc(m, test_loader):
   for param in m.model.parameters():
     param.requires_grad = False
 
-  for inputs, labels in test_loader:
+  print("Getting Classwise Accuracy ...")
+
+  for inputs, labels in tqdm(test_loader):
     inputs, labels = inputs.cuda(), labels.cuda()
 
     # Generate adversarial examples
@@ -56,24 +58,19 @@ def main():
   
   model_ext = ''
   if args.model_type == 'adv_trained':
-    model_ext = 'adv_train'
+    model_ext = '_adv_train'
   elif args.model_type == 'robust':
-    model_ext = 'robust'
+    model_ext = '_robust'
 
-  model_path = f'/home/venkat/niranjan/robust_CAMs/cifar_r50_{model_ext}/checkpoint.pt.latest'
-
-  if not os.path.exists(model_path):
-    print("Model path does not exist")
-    return
-  elif not model_path.endswith('.pt'):
-    print("Model path must be a .pt file")
-    return
-  
+  model_path = f'/home/venkat/niranjan/robust_CAMs/cifar_r50{model_ext}/checkpoint.pt.latest'
+  print(f"Trying to load Model at Path: {model_path}")
 
   model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
+  print("Model Loaded Successfully")
   
   test_loader = ds.make_loaders(batch_size=10, workers=4, only_val=True)[1]
   model.eval()
+
 
   classwise_acc = get_classwise_acc(model, test_loader)
   print("Classwise Accuracy: ", classwise_acc)
