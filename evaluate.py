@@ -93,7 +93,7 @@ def main():
   print("Classwise Accuracy: ", classwise_acc)
 
   # store classwise accuracy as a pickle file
-  with open(f'/home/venkat/niranjan/robust_CAMs/cifar_r50_{model_ext}_train/classwise_acc_e{EPS}.pkl', 'wb') as f:
+  with open(f'/home/venkat/niranjan/robust_CAMs/cifar_r50{model_ext}_train/classwise_acc_e{EPS}.pkl', 'wb') as f:
     pickle.dump(classwise_acc, f)
   
   print("Classwise Accuracy stored as pickle file")
