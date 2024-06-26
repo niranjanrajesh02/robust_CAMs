@@ -32,11 +32,14 @@ def init_model_data():
   return m, train_loader, val_loader
 
 def train_model(adv_train=False, m=None, train_loader=None, val_loader=None):
-
+  out_path = "cifar_r50_train"
+  if adv_train:
+      out_path = "cifar_r50_adv_train"
+  
 
   # Hard-coded base parameters - https://robustness.readthedocs.io/en/latest/api/robustness.defaults.html#module-robustness.defaults
   train_kwargs = {
-      'out_dir': "cifar_r50_train",
+      'out_dir': out_path,
       'adv_train': 0,
       'adv_eval': 0,
       'epochs': 150,
@@ -51,9 +54,9 @@ def train_model(adv_train=False, m=None, train_loader=None, val_loader=None):
       'attack_steps': 7,
       'save_ckpt_iters': -1
   }
+
   if adv_train:
       train_kwargs['adv_train'] = 1
-      train_kwargs['out_dir'] = "cifar_r50_adv_train"
   
   train_args = Parameters(train_kwargs)
 
@@ -62,7 +65,8 @@ def train_model(adv_train=False, m=None, train_loader=None, val_loader=None):
                           defaults.TRAINING_ARGS, CIFAR)
   train_args = defaults.check_and_fill_args(train_args,  defaults.PGD_ARGS, CIFAR)
 
-  train.train_model(train_args, m, (train_loader, val_loader))
+  store = store.Store(out_path, exp_id=f'{out_path}_store')
+  train.train_model(train_args, m, (train_loader, val_loader), store=store)
 
 def main():
   import argparse
