@@ -7,6 +7,19 @@ import torch
 import cox.store
 import pickle
 from tqdm import tqdm
+import sys
+
+def load_state_dict_from_url(*args, **kwargs):
+    return torch.hub.load_state_dict_from_url(*args, **kwargs)
+
+# Create a dummy module
+class DummyModule:
+    def __init__(self):
+        self.load_state_dict_from_url = load_state_dict_from_url
+
+# Replace the faulty import
+sys.modules['torchvision.models.utils'] = DummyModule()
+
 EPS = 0.25
 
 attack_kwargs = {
