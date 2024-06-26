@@ -87,7 +87,8 @@ class CustomTensorDataset(DataSet):
 
         # Call the superclass __init__ method with appropriate arguments
         super(CustomTensorDataset, self).__init__(
-            name='custom',
+            ds_name='custom',
+            data_path='./', 
             num_classes=num_classes,
             mean=data_mean,
             std=data_std,
