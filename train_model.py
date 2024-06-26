@@ -133,7 +133,7 @@ def robust_train():
     #  custom dataset with robustness library
     ds = CustomTensorDataset(train_set, test_set)
     model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds)
-    train_loader, val_loader = ds.make_loaders(batch_size=BATCH_SIZE, workers=NUM_WORKERS, only_val=True)
+    train_loader, val_loader = ds.make_loaders(batch_size=BATCH_SIZE, workers=NUM_WORKERS)
     
     train_kwargs = {
       'out_dir': out_path,
