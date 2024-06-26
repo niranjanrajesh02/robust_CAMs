@@ -21,7 +21,7 @@ from robustness.data_augmentation import TRAIN_TRANSFORMS_DEFAULT, TEST_TRANSFOR
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 
 from cox.utils import Parameters
-import cox.store
+
 from cox import utils
 from cox import store
 
@@ -159,8 +159,8 @@ def robust_train():
                             defaults.TRAINING_ARGS, CIFAR)
     train_args = defaults.check_and_fill_args(train_args,  defaults.PGD_ARGS, CIFAR)
 
-    store = store.Store(out_path, exp_id=f'{out_path}_store')
-    train.train_model(train_args, model, (train_loader, val_loader), store=store)
+    out_store = store.Store(out_path, exp_id=f'{out_path}_store')
+    train.train_model(train_args, model, (train_loader, val_loader), store=out_store)
 
     return
 
