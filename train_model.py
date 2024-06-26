@@ -18,8 +18,8 @@ sys.modules['torchvision.models.utils'] = DummyModule()
 from robustness import model_utils, datasets, train, defaults
 from robustness.datasets import CIFAR, DataSet
 from robustness.data_augmentation import TRAIN_TRANSFORMS_DEFAULT, TEST_TRANSFORMS_DEFAULT
-from torch.utils.data import Dataset, DataLoader, TensorDataset
-
+from torch.utils.data import Dataset, DataLoader
+from robustness.tools.folder import TensorDataset
 from cox.utils import Parameters
 
 from cox import utils
