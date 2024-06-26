@@ -159,8 +159,8 @@ def robust_train():
                             defaults.TRAINING_ARGS, CIFAR)
     train_args = defaults.check_and_fill_args(train_args,  defaults.PGD_ARGS, CIFAR)
 
-    out_store = store.Store(out_path, exp_id=f'{out_path}_store')
-    train.train_model(train_args, model, (train_loader, val_loader), store=out_store)
+    # out_store = store.Store(out_path, exp_id=f'{out_path}_store')
+    train.train_model(train_args, model, (train_loader, val_loader))
 
     return
 
