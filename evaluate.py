@@ -21,10 +21,6 @@ import cox.store
 import pickle
 from tqdm import tqdm
 
-EPS = 0.1
-
-
-
 def get_classwise_acc(m, test_loader, attack_kwargs, eps):
   if eps == 0:
     print("No attack being performed")
@@ -95,7 +91,7 @@ def main():
   model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
   print("Model Loaded Successfully")
   
-  test_loader = ds.make_loaders(batch_size=10, workers=4, only_val=True)[1]
+  test_loader = ds.make_loaders(batch_size=10, workers=1, only_val=True)[1]
   model.eval()
 
 
@@ -103,7 +99,7 @@ def main():
   print("Classwise Accuracy: ", classwise_acc)
 
   # store classwise accuracy as a pickle file
-  with open(f'/home/venkat/niranjan/robust_CAMs/cifar_r50{model_ext}_train/classwise_acc_e{EPS}.pkl', 'wb') as f:
+  with open(f'/home/venkat/niranjan/robust_CAMs/cifar_r50{model_ext}_train/classwise_acc_e{args.eps}.pkl', 'wb') as f:
     pickle.dump(classwise_acc, f)
   
   print("Classwise Accuracy stored as pickle file")
