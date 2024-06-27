@@ -5,9 +5,11 @@ import os
 import sys
 import torch.hub
 import os
-from torchvision import transforms, datasets
 import argparse
 import pickle
+from _utils import twoNN
+
+
 
 def load_state_dict_from_url(*args, **kwargs):
     return torch.hub.load_state_dict_from_url(*args, **kwargs)
@@ -20,8 +22,7 @@ class DummyModule:
 # Replace the faulty import
 sys.modules['torchvision.models.utils'] = DummyModule()
 
-from robustness.datasets import CIFAR
-from robustness import model_utils
+
 
 def get_activations(model, input):
   activations = []
@@ -43,21 +44,51 @@ def get_activations(model, input):
 
   h1.remove()
 
-  # reshape to remove batches
-  print(activations)
   activations_arr = np.array(activations[0][0])
 
+  # reshape to remove batches
   # print("Activations Shape: ",activations_arr.shape)
   # NB, BS, A = activations_arr.shape
   # activations_r = activations_arr.reshape(NB*BS, A)
   
   return activations_arr
 
+def estimate_manifold_dim(model_ext):
+  class_acts_file = f'./data/cifar_r50{model_ext}_train/class_acts_test.pkl'
+
+  # load class activations
+  if os.path.exists(class_acts_file):
+    with open(class_acts_file, 'rb') as f:
+      class_activations = pickle.load(f)
+  else:
+    print("Class Activations File not found.")
+    return
+  
+  for key in class_activations:
+    class_activations[key] = np.array(class_activations[key])
+    print(f"Class {key} Activations Shape: ", class_activations[key].shape)
+
+  class_dims = {i : 0 for i in range(10)}
+  for key in class_activations:
+    acts = class_activations[key]
+    print(f"Estimating manifold dimension for class {key} ...")
+    id, _ = twoNN.estimate_dim(acts)
+    print(f"Estimated manifold dimension for class {key}: ", id)
+    class_dims[key] = id
+  
+  print("Classwise Estimated Manifold Dimensions: ", class_dims)
+
+  with open(f'./data/cifar_r50{model_ext}_train/class_dims_test.pkl', 'wb') as f:
+    pickle.dump(class_dims, f)
+
+  return
+
 def main():
 
   parser = argparse.ArgumentParser(description='Get Class Activations')
   parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
   parser.add_argument('--data_split', type=str, help='Which data loader to use: train or test', default='test')
+  parser.add_argument('--task', type=str, help='Task to perform: acts or dims', default='acts')
   args = parser.parse_args()
 
   model_ext = ''
@@ -66,49 +97,49 @@ def main():
   elif args.model_type == 'robust':
     model_ext = '_robust'
 
-  model_path = f'./cifar_r50{model_ext}_train/checkpoint.pt.latest'
+  if args.task == 'acts':
+    from robustness.datasets import CIFAR
+    from robustness import model_utils
 
-  ds = CIFAR('./data')
-  print("Trying to load model from path: ", model_path)
-  model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
+    model_path = f'./cifar_r50{model_ext}_train/checkpoint.pt.latest'
+    ds = CIFAR('./data')
+    print("Trying to load model from path: ", model_path)
+    model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
 
-  # batch size 1 allows us to get class of each image to sort into class_activations
-  train_loader , test_loader = ds.make_loaders(batch_size=1, workers=1)
-  dl = None
-  if args.data_split == 'train':
-    dl = train_loader
-  elif args.data_split == 'test':
-    dl = test_loader
-  
+    # batch size 1 allows us to get class of each image to sort into class_activations
+    train_loader , test_loader = ds.make_loaders(batch_size=1, workers=1)
+    dl = None
+    if args.data_split == 'train':
+      dl = train_loader
+    elif args.data_split == 'test':
+      dl = test_loader
 
-  class_activations = {i: [] for i in range(10)}
+    class_activations = {i: [] for i in range(10)}
 
-  print("Getting Class Activations ...")
+    print("Getting Class Activations ...")
+    for input, label in tqdm(dl):
+      input, label = input.cuda(), label.cuda()
+      # get class index and corresponding activations
+      label = label.item()
+      activations = get_activations(model.model, input)
+      # append to class activations
+      class_activations[label].append(activations)
 
-  for input, label in tqdm(dl):
-    input, label = input.cuda(), label.cuda()
-    # get class index
-    label = label.item()
+    print("Class Activations obtained.")
+    for key in class_activations:
+      class_activations[key] = np.array(class_activations[key])
+      print(f"Class {key} Activations Shape: ", class_activations[key].shape)
 
-    activations = get_activations(model.model, input)
+    print("Saving Class Activations ...") 
+    with open(f'./cifar_r50{model_ext}_train/class_acts_{args.data_split}.pkl', 'wb') as f:
+      pickle.dump(class_activations, f)
+    
+    return
 
-    # append to class activations
-    class_activations[label].append(activations)
-  
+  elif args.task == 'dims':
+    estimate_manifold_dim(model_ext)
+    return
 
-  print("Class Activations obtained.")
-  for key in class_activations:
-    class_activations[key] = np.array(class_activations[key])
-    print(f"Class {key} Activations Shape: ", class_activations[key].shape)
-
-
-  print("Saving Class Activations ...") 
-  with open(f'./cifar_r50{model_ext}_train/class_acts_{args.data_split}.pkl', 'wb') as f:
-    pickle.dump(class_activations, f)
-  
-  return
-
-# TODO: Test the code (and Manifold Dim Est)
 
 if __name__ == '__main__':
   main()

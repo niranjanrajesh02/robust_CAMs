@@ -2,3 +2,4 @@ robustCAMs
 *.ppk
 *.pub
 models/
+data/
