@@ -25,7 +25,12 @@ EPS = 0.1
 
 
 
-def get_classwise_acc(m, test_loader, attack_kwargs):
+def get_classwise_acc(m, test_loader, attack_kwargs, eps):
+  if eps == 0:
+    print("No attack being performed")
+  else:
+    print(f"Attack being performed with Epsilon: {eps}")
+  
   class_correct = {i: 0 for i in range(10)}
   class_total = {i: 0 for i in range(10)}
 
@@ -38,15 +43,19 @@ def get_classwise_acc(m, test_loader, attack_kwargs):
     inputs, labels = inputs.cuda(), labels.cuda()
 
     # Generate adversarial examples
-    _, adv_in = m(inputs, labels, make_adv=True, **attack_kwargs)
-    preds, _ = m(adv_in)
+    if eps != 0:
+      _, adv_in = m(inputs, labels, make_adv=True, **attack_kwargs)
+      out, _ = m(adv_in)
+      preds = torch.argmax(out, dim=1)
 
-    adv_preds = torch.argmax(preds, dim=1)
-
+    else:
+      out, _ = m(inputs, labels, make_adv=False)
+      preds = torch.argmax(out, dim=1)
+  
     # Update classwise accuracy for the batch
     for i in range(len(labels)):
       label = labels[i].item()
-      pred = adv_preds[i].item()
+      pred = preds[i].item()
       class_correct[label] += int(pred == label)
       class_total[label] += 1
 
@@ -89,7 +98,7 @@ def main():
   model.eval()
 
 
-  classwise_acc = get_classwise_acc(model, test_loader, attack_kwargs)
+  classwise_acc = get_classwise_acc(model, test_loader, attack_kwargs, args.eps)
   print("Classwise Accuracy: ", classwise_acc)
 
   # store classwise accuracy as a pickle file
