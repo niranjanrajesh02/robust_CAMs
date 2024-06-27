@@ -28,10 +28,12 @@ from cox import store
 NUM_WORKERS = 1
 
 def init_model_data(ds_name):
-  if ds_name == 'cifar':
+  if ds_name == 'CIFAR':
+    print("CIFAR being imported")
     batch_size = 128
     ds = CIFAR('./data')
-  elif ds_name == 'restricted_imagenet':
+  elif ds_name == 'RestrictedImagenet':
+    print("Restricted ImageNeta being imported")
     batch_size = 256
     ds = RestrictedImageNet('./data')
 
@@ -40,10 +42,10 @@ def init_model_data(ds_name):
 
   return m, train_loader, val_loader
 
-def train_model(adv_train=False, m=None, train_loader=None, val_loader=None, ds_name='cifar'):
-  out_path = f"{ds_name}_r50_train"
+def train_model(adv_train=False, m=None, train_loader=None, val_loader=None, ds_name='CIFAR'):
+  out_path = f"{ds_name.lower()}_r50_train"
   if adv_train:
-      out_path = f"{ds_name}_r50_adv_train"
+      out_path = f"{ds_name.lower()}_r50_adv_train"
   
 
   # Hard-coded base parameters - https://robustness.readthedocs.io/en/latest/api/robustness.defaults.html#module-robustness.defaults
@@ -68,14 +70,14 @@ def train_model(adv_train=False, m=None, train_loader=None, val_loader=None, ds_
       train_kwargs['adv_train'] = 1
   
   # default was for CIFAR
-  if ds_name == 'restricted_imagenet':
+  if ds_name == 'RestrictedImagenet':
     train_kwargs['epochs'] = 150
     train_kwargs['batch_size'] = 256
     train_kwargs['weight_decay'] = 1e-4
   
   train_args = Parameters(train_kwargs)
 
-  ds_ref = CIFAR if ds_name == 'cifar' else RestrictedImageNet
+  ds_ref = CIFAR if ds_name == 'CIDAR' else RestrictedImageNet
   # Fill whatever parameters are missing from the defaults
   train_args = defaults.check_and_fill_args(train_args,
                           defaults.TRAINING_ARGS, ds_ref)
@@ -184,7 +186,7 @@ def main():
   parser.add_argument('--train_mode',  help='Training Mode: standard, adv or robust', type=str, default='standard')
   parser.add_argument('--dataset',  help='Dataset to use', type=str, default='CIFAR10')
   args = parser.parse_args()
-  assert args.dataset in ['cifar', 'restricted_imagenet'], "Invalid dataset"
+  assert args.dataset in ['CIFAR', 'RestrictedImagenet'], "Invalid dataset"
   assert args.train_mode in ['standard', 'adv', 'robust'], "Invalid training mode"
 
   adv_train = 0
