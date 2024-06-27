@@ -81,7 +81,8 @@ def main():
   }
 
   assert args.model_type in ['standard', 'adv_trained', 'robust'], "Invalid model type"
-  
+  print("\n\n=============================================")
+  print(f"Model Type: {args.model_type}, Epsilon: {args.eps}")
   model_ext = ''
   if args.model_type == 'adv_trained':
     model_ext = '_adv'
