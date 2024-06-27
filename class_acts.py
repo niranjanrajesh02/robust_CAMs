@@ -45,7 +45,7 @@ def get_activations(model, input):
 
   # reshape to remove batches
   print(activations)
-  activations_arr = np.array(activations[0])
+  activations_arr = np.array(activations[0][0])
 
   # print("Activations Shape: ",activations_arr.shape)
   # NB, BS, A = activations_arr.shape
@@ -72,6 +72,7 @@ def main():
   print("Trying to load model from path: ", model_path)
   model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
 
+  # batch size 1 allows us to get class of each image to sort into class_activations
   train_loader , test_loader = ds.make_loaders(batch_size=1, workers=1)
   dl = None
   if args.data_split == 'train':
@@ -84,7 +85,6 @@ def main():
 
   print("Getting Class Activations ...")
 
-  ind = 0
   for input, label in tqdm(dl):
     input, label = input.cuda(), label.cuda()
     # get class index
@@ -94,11 +94,7 @@ def main():
 
     # append to class activations
     class_activations[label].append(activations)
-    ind += 1
-
-    if ind == 10:
-      break
-
+  
 
   print("Class Activations obtained.")
   for key in class_activations:

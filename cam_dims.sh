@@ -8,4 +8,6 @@
 #SBATCH -o cam_out.log
 #SBATCH -e cam_err.log
 #SBATCH --gres=gpu:1
-srun python /home/venkat/niranjan/robust_CAMs/class_acts.py
+srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --model_type standard --data_split test
+srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --model_type adv_trained --data_split test
+srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --model_type robust --data_split test
