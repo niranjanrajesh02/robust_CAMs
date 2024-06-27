@@ -44,12 +44,14 @@ def get_activations(model, input):
   h1.remove()
 
   # reshape to remove batches
-  activations_arr = np.array(activations)
-  print("Activations Shape: ",activations_arr.shape)
-  NB, BS, A = activations_arr.shape
-  activations_r = activations_arr.reshape(NB*BS, A)
+  print(activations)
+  activations_arr = np.array(activations[0])
+
+  # print("Activations Shape: ",activations_arr.shape)
+  # NB, BS, A = activations_arr.shape
+  # activations_r = activations_arr.reshape(NB*BS, A)
   
-  return activations_r
+  return activations_arr
 
 def main():
 
@@ -81,6 +83,8 @@ def main():
   class_activations = {i: [] for i in range(10)}
 
   print("Getting Class Activations ...")
+
+  ind = 0
   for input, label in tqdm(dl):
     input, label = input.cuda(), label.cuda()
     # get class index
@@ -90,6 +94,11 @@ def main():
 
     # append to class activations
     class_activations[label].append(activations)
+    ind += 1
+
+    if ind == 10:
+      break
+
 
   print("Class Activations obtained.")
   for key in class_activations:
@@ -99,7 +108,7 @@ def main():
 
   print("Saving Class Activations ...") 
   with open(f'./cifar_r50{model_ext}_train/class_acts_{args.data_split}.pkl', 'wb') as f:
-    pickle.dump(class_activations)
+    pickle.dump(class_activations, f)
   
   return
 
