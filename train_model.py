@@ -16,7 +16,7 @@ sys.modules['torchvision.models.utils'] = DummyModule()
 
 
 from robustness import model_utils, datasets, train, defaults
-from robustness.datasets import DataSet, CIFAR, RestrictedImageNet
+from robustness.datasets import DataSet, CIFAR, RestrictedImageNet, ImageNet
 from robustness.data_augmentation import TRAIN_TRANSFORMS_DEFAULT, TEST_TRANSFORMS_DEFAULT
 from torch.utils.data import Dataset, DataLoader
 from robustness.tools.folder import TensorDataset
@@ -36,6 +36,11 @@ def init_model_data(ds_name):
     print("Restricted ImageNeta being imported")
     batch_size = 256
     ds = RestrictedImageNet('./data')
+  elif ds_name == 'ImageNet':
+    print("ImageNet being imported")
+    batch_size = 256
+    ds = datasets.ImageNet('./data')
+    
 
   m, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds)
   train_loader, val_loader = ds.make_loaders(batch_size=batch_size, workers=NUM_WORKERS, data_aug=False)
@@ -186,7 +191,7 @@ def main():
   parser.add_argument('--train_mode',  help='Training Mode: standard, adv or robust', type=str, default='standard')
   parser.add_argument('--dataset',  help='Dataset to use', type=str, default='CIFAR10')
   args = parser.parse_args()
-  assert args.dataset in ['CIFAR', 'RestrictedImagenet'], "Invalid dataset"
+  assert args.dataset in ['CIFAR', 'RestrictedImageNet', 'ImageNet'], "Invalid dataset"
   assert args.train_mode in ['standard', 'adv', 'robust'], "Invalid training mode"
 
   adv_train = 0
