@@ -10,7 +10,10 @@
 #SBATCH --gres=gpu:1
 srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type standard --eps 0
 srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type standard --eps 0.1
-srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type adv_trained --eps 
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type standard --eps 0.2
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type adv_trained --eps 0
 srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type adv_trained --eps 0.1
-srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type robust --eps 
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type adv_trained --eps 0.2
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type robust --eps 0
 srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type robust --eps 0.1
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type robust --eps 0.2
