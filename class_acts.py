@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-import tqdm
+from tqdm import tqdm
 import os
 import sys
 import torch.hub
@@ -23,7 +23,7 @@ sys.modules['torchvision.models.utils'] = DummyModule()
 from robustness.datasets import CIFAR
 from robustness import model_utils
 
-def get_activations(model, dl):
+def get_activations(model, input):
   activations = []
   # hook to get input features of a layer 
   def activation_hook(module, input, output):
@@ -36,23 +36,19 @@ def get_activations(model, dl):
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   
   model.eval()
-  with torch.no_grad():
-    for images, labels, in tqdm.tqdm(dl):
-      images = images.to(device)
-      labels = labels.to(device)
-      _ = model(images)
-  h1.remove()
+  for param in model.parameters():
+    param.requires_grad = False
+   
+  _ = model(input) # forward pass, activations are stored by the hook
 
-  # remove last batch if it has less than BS points
-  if len(activations[-1]) != len(activations[0]):
-    activations = activations[:-1]
+  h1.remove()
 
   # reshape to remove batches
   activations_arr = np.array(activations)
+  print("Activations Shape: ",activations_arr.shape)
   NB, BS, A = activations_arr.shape
   activations_r = activations_arr.reshape(NB*BS, A)
   
-  print("Activations Shape: ",activations_r.shape)
   return activations_r
 
 def main():
@@ -72,7 +68,7 @@ def main():
 
   ds = CIFAR('./data')
   print("Trying to load model from path: ", model_path)
-  model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path='cifar_nat.pt')
+  model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
 
   train_loader , test_loader = ds.make_loaders(batch_size=1, workers=1)
   dl = None
@@ -90,7 +86,7 @@ def main():
     # get class index
     label = label.item()
 
-    activations = get_activations(model, input)
+    activations = get_activations(model.model, input)
 
     # append to class activations
     class_activations[label].append(activations)
