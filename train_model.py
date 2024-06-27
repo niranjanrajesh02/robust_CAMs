@@ -28,10 +28,10 @@ from cox import store
 NUM_WORKERS = 1
 
 def init_model_data(ds_name):
-  if ds_name == 'CIFAR10':
+  if ds_name == 'cifar':
     batch_size = 128
     ds = CIFAR('./data')
-  elif ds_name == 'RestrictedImageNet':
+  elif ds_name == 'restricted_imagenet':
     batch_size = 256
     ds = RestrictedImageNet('./data')
 
@@ -40,11 +40,10 @@ def init_model_data(ds_name):
 
   return m, train_loader, val_loader
 
-def train_model(adv_train=False, m=None, train_loader=None, val_loader=None, ds_name='CIFAR'):
-  ds_ext = ds_name.lower()
-  out_path = f"{ds_ext}_r50_train"
+def train_model(adv_train=False, m=None, train_loader=None, val_loader=None, ds_name='cifar'):
+  out_path = f"{ds_name}_r50_train"
   if adv_train:
-      out_path = f"{ds_ext}_r50_adv_train"
+      out_path = f"{ds_name}_r50_adv_train"
   
 
   # Hard-coded base parameters - https://robustness.readthedocs.io/en/latest/api/robustness.defaults.html#module-robustness.defaults
@@ -69,14 +68,14 @@ def train_model(adv_train=False, m=None, train_loader=None, val_loader=None, ds_
       train_kwargs['adv_train'] = 1
   
   # default was for CIFAR
-  if ds_name == 'RestrictedImageNet':
+  if ds_name == 'restricted_imagenet':
     train_kwargs['epochs'] = 150
     train_kwargs['batch_size'] = 256
     train_kwargs['weight_decay'] = 1e-4
   
   train_args = Parameters(train_kwargs)
 
-  ds_ref = CIFAR if ds_name == 'CIFAR' else RestrictedImageNet
+  ds_ref = CIFAR if ds_name == 'cifar' else RestrictedImageNet
   # Fill whatever parameters are missing from the defaults
   train_args = defaults.check_and_fill_args(train_args,
                           defaults.TRAINING_ARGS, ds_ref)
@@ -185,22 +184,22 @@ def main():
   parser.add_argument('--train_mode',  help='Training Mode: standard, adv or robust', type=str, default='standard')
   parser.add_argument('--dataset',  help='Dataset to use', type=str, default='CIFAR10')
   args = parser.parse_args()
-
+  assert args.dataset in ['cifar', 'restricted_imagenet'], "Invalid dataset"
   assert args.train_mode in ['standard', 'adv', 'robust'], "Invalid training mode"
-  adv_train=0
+
+  adv_train = 0
   if args.train_mode == 'adv':
     adv_train = 1
-  
-  
 
-  print("Training")
+  print(f"Training Begins with Mode: {args.train_mode} and Dataset: {args.dataset}")
   
   if args.train_mode == 'robust':
      robust_train()
   else:
-    m, train_loader, val_loader = init_model_data(ds=args.dataset)
-    train_model(adv_train=adv_train, m=m, train_loader=train_loader, val_loader=val_loader)
-  print("Done training")
+    m, train_loader, val_loader = init_model_data(ds_name=args.dataset)
+    train_model(adv_train=adv_train, m=m, train_loader=train_loader, val_loader=val_loader, ds_name=args.dataset)
+  
+  print("Training Complete!")
 
 if __name__ == '__main__':
   main()

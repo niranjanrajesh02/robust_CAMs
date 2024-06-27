@@ -8,4 +8,4 @@
 #SBATCH -o out.log
 #SBATCH -e err.log
 #SBATCH --gres=gpu:1
-srun python /home/venkat/niranjan/robust_CAMs/train_model.py --train_mode robust
+srun python /home/venkat/niranjan/robust_CAMs/train_model.py --train_mode standard --dataset restricted_imagenet 
