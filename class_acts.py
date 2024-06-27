@@ -64,17 +64,21 @@ def estimate_manifold_dim(model_ext):
     print("Class Activations File not found.")
     return
   
-  for key in class_activations:
-    class_activations[key] = np.array(class_activations[key])
-    print(f"Class {key} Activations Shape: ", class_activations[key].shape)
-
   class_dims = {i : 0 for i in range(10)}
   for key in class_activations:
-    acts = class_activations[key]
+    acts = np.array(class_activations[key])
     print(f"Estimating manifold dimension for class {key} ...")
     id, _ = twoNN.estimate_dim(acts)
     print(f"Estimated manifold dimension for class {key}: ", id)
     class_dims[key] = id
+
+  class_dims['all'] = 0
+  # concatenate all class activations
+  all_acts = np.concatenate([class_activations[key] for key in class_activations], axis=0)
+  print("Estimating manifold dimension for all classes with concatenated activations: ", all_acts.shape)
+  id, _ = twoNN.estimate_dim(all_acts)
+  print("Estimated manifold dimension for all classes: ", id)
+  class_dims['all'] = id
   
   print("Classwise Estimated Manifold Dimensions: ", class_dims)
 

@@ -16,7 +16,7 @@ sys.modules['torchvision.models.utils'] = DummyModule()
 
 
 from robustness import model_utils, datasets, train, defaults
-from robustness.datasets import CIFAR, DataSet
+from robustness.datasets import DataSet, CIFAR, RestrictedImageNet
 from robustness.data_augmentation import TRAIN_TRANSFORMS_DEFAULT, TEST_TRANSFORMS_DEFAULT
 from torch.utils.data import Dataset, DataLoader
 from robustness.tools.folder import TensorDataset
@@ -26,19 +26,25 @@ from cox import utils
 from cox import store
 
 NUM_WORKERS = 1
-BATCH_SIZE = 128
 
-def init_model_data():
-  ds = CIFAR('./data')
+def init_model_data(ds_name):
+  if ds_name == 'CIFAR10':
+    batch_size = 128
+    ds = CIFAR('./data')
+  elif ds_name == 'RestrictedImageNet':
+    batch_size = 256
+    ds = RestrictedImageNet('./data')
+
   m, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds)
-  train_loader, val_loader = ds.make_loaders(batch_size=BATCH_SIZE, workers=NUM_WORKERS, data_aug=False)
+  train_loader, val_loader = ds.make_loaders(batch_size=batch_size, workers=NUM_WORKERS, data_aug=False)
 
   return m, train_loader, val_loader
 
-def train_model(adv_train=False, m=None, train_loader=None, val_loader=None):
-  out_path = "cifar_r50_train"
+def train_model(adv_train=False, m=None, train_loader=None, val_loader=None, ds_name='CIFAR'):
+  ds_ext = ds_name.lower()
+  out_path = f"{ds_ext}_r50_train"
   if adv_train:
-      out_path = "cifar_r50_adv_train"
+      out_path = f"{ds_ext}_r50_adv_train"
   
 
   # Hard-coded base parameters - https://robustness.readthedocs.io/en/latest/api/robustness.defaults.html#module-robustness.defaults
@@ -62,12 +68,19 @@ def train_model(adv_train=False, m=None, train_loader=None, val_loader=None):
   if adv_train:
       train_kwargs['adv_train'] = 1
   
+  # default was for CIFAR
+  if ds_name == 'RestrictedImageNet':
+    train_kwargs['epochs'] = 150
+    train_kwargs['batch_size'] = 256
+    train_kwargs['weight_decay'] = 1e-4
+  
   train_args = Parameters(train_kwargs)
 
+  ds_ref = CIFAR if ds_name == 'CIFAR' else RestrictedImageNet
   # Fill whatever parameters are missing from the defaults
   train_args = defaults.check_and_fill_args(train_args,
-                          defaults.TRAINING_ARGS, CIFAR)
-  train_args = defaults.check_and_fill_args(train_args,  defaults.PGD_ARGS, CIFAR)
+                          defaults.TRAINING_ARGS, ds_ref)
+  train_args = defaults.check_and_fill_args(train_args,  defaults.PGD_ARGS, ds_ref)
 
   store = store.Store(out_path, exp_id=f'{out_path}_store')
   train.train_model(train_args, m, (train_loader, val_loader), store=store)
@@ -165,10 +178,12 @@ def robust_train():
     return
 
 
+
 def main():
   import argparse
   parser = argparse.ArgumentParser(description='Train a model')
   parser.add_argument('--train_mode',  help='Training Mode: standard, adv or robust', type=str, default='standard')
+  parser.add_argument('--dataset',  help='Dataset to use', type=str, default='CIFAR10')
   args = parser.parse_args()
 
   assert args.train_mode in ['standard', 'adv', 'robust'], "Invalid training mode"
@@ -183,7 +198,7 @@ def main():
   if args.train_mode == 'robust':
      robust_train()
   else:
-    m, train_loader, val_loader = init_model_data()
+    m, train_loader, val_loader = init_model_data(ds=args.dataset)
     train_model(adv_train=adv_train, m=m, train_loader=train_loader, val_loader=val_loader)
   print("Done training")
 
