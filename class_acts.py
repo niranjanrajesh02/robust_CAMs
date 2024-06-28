@@ -65,7 +65,7 @@ def get_activations(model, input):
 
 def estimate_manifold_dim(model_ext, dataset_name='cifar'):
   print("Estimating Manifold Dimension ...")
-  class_acts_file = f'./{dataset_name}_{model_ext}_train/class_acts_test.pkl'
+  class_acts_file = f'./{dataset_name}_r50{model_ext}_train/class_acts_test.pkl'
   print("Class Acts File: ", class_acts_file)
   # load class activations
   if os.path.exists(class_acts_file):
@@ -163,7 +163,7 @@ def main():
 
     print("Saving Class Activations ...") 
     
-    save_path= f'/home/venkat/niranjan/robust_CAMs/{args.dataset}_r50{model_ext}_train'
+    save_path= f'./{args.dataset}_r50{model_ext}_train'
     if not os.path.exists(save_path):
       os.makedirs(save_path)
 
