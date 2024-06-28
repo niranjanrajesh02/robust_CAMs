@@ -64,8 +64,9 @@ def get_activations(model, input):
   return activations_arr
 
 def estimate_manifold_dim(model_ext, dataset_name='cifar'):
+  print("Estimating Manifold Dimension ...")
   class_acts_file = f'./{dataset_name}_{model_ext}_train/class_acts_test.pkl'
-
+  print("Class Acts File: ", class_acts_file)
   # load class activations
   if os.path.exists(class_acts_file):
     with open(class_acts_file, 'rb') as f:
