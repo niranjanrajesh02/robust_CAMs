@@ -19,14 +19,19 @@ def get_classwise_acc(model, attack, test_loader, num_classes=1000):
   print("Getting Classwise Accuracy ...")
 
   
-  for inputs, labels in tqdm(test_loader):
+  for inputs, labels in tqdm(test_loader,):
     device = torch.device("cpu")
     inputs, labels = inputs.to(device).numpy(), labels.to(device).numpy()
-    adv_images = attack.generate(x=inputs)
-    # Generate adversarial examples
-    adv_images_tensor = torch.tensor(adv_images)
-    outputs = model._model(adv_images_tensor)
-    _, preds = torch.max(outputs, 1)
+
+    if eps != 0:
+      adv_images = attack.generate(x=inputs)
+      # Generate adversarial examples
+      adv_images_tensor = torch.tensor(adv_images)
+      outputs = model.predict(adv_images_tensor)
+      _, preds = torch.max(outputs, 1)
+    else:
+      outputs = model.predict(inputs)
+      _, preds = torch.max(outputs, 1)
     
     for i in range(len(labels)):
         label = labels[i].item()
@@ -67,7 +72,7 @@ def main():
     from torchvision.models import resnet50
     model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
     model = resnet50(pretrained=False).to(device)
-    model.load_state_dict(torch.load(model_path), map_location=device)
+    model.load_state_dict(torch.load(model_path))
     # model.to(device)
     model.eval()
     classifier = PyTorchClassifier(
@@ -109,12 +114,12 @@ def main():
     ])
     
     val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=8).to(device)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=1)
   
   attack = ProjectedGradientDescent(
     estimator=classifier,
     norm=2,
-    eps=0.2,
+    eps=args.eps,
     eps_step=0.01,
     max_iter=7,
     targeted=False
