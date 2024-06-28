@@ -63,7 +63,7 @@ def get_classwise_acc(m, test_loader, attack_kwargs, eps):
 def main():
   parser = argparse.ArgumentParser(description='Train a model on CIFAR')
   parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
-  parser.add_argument('--eps', type=float, help='Epsilon value for adversarial training', default=0.5)
+  parser.add_argument('--eps', type=float, help='Epsilon value for adversarial training', default=0)
   parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='cifar')
   args = parser.parse_args()
   
@@ -102,7 +102,7 @@ def main():
   if args.dataset == 'cifar':
     model_path = f'/home/venkat/niranjan/robust_CAMs/cifar_r50{model_ext}_train/checkpoint.pt.latest'
   else:
-    model_path = f'/home/venkat/niranjan/robust_CAMs/models/{args.dataset}_r50{model_ext}_train/checkpoint.pt'
+    model_path = f'/home/venkat/niranjan/robust_CAMs/models/{args.dataset}_r50{model_ext}_train.pt'
 
   model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
   print("Model Loaded Successfully")
