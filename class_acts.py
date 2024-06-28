@@ -32,10 +32,8 @@ def get_activations(model, input):
     activations.append(in_feats)
     return
   
-  print(model)
-
-  h1 = None
-  
+ 
+  h1 = None 
   # register hook at the final classification layer (input of final layer == activations of penultimate/representation layer)
   for name, module in model.named_children():
     if name == 'linear':
@@ -173,7 +171,7 @@ def main():
     return
 
   elif args.task == 'dims':
-    estimate_manifold_dim(model_ext)
+    estimate_manifold_dim(model_ext, dataset_name=args.dataset)
     return
 
 
