@@ -20,8 +20,8 @@ def get_classwise_acc(model, attack, test_loader, num_classes=1000):
 
   
   for inputs, labels in tqdm(test_loader):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    inputs, labels = inputs.cpu().numpy(), labels.cpu().numpy()
+    device = torch.device("cpu")
+    inputs, labels = inputs.to(device).numpy(), labels.to(device).numpy()
     adv_images = attack.generate(x=inputs)
     # Generate adversarial examples
     adv_images_tensor = torch.tensor(adv_images)
@@ -58,7 +58,7 @@ def main():
   model_ext = ''
   model = None
 
-  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  device = torch.device("cpu")
   print("Device: ", device)
 
   if args.model_type == 'adv_trained':
@@ -66,8 +66,8 @@ def main():
   elif args.model_type == 'standard':
     from torchvision.models import resnet50
     model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
-    model = resnet50(pretrained=False)
-    model.load_state_dict(torch.load(model_path))
+    model = resnet50(pretrained=False).to(device)
+    model.load_state_dict(torch.load(model_path), map_location=device)
     # model.to(device)
     model.eval()
     classifier = PyTorchClassifier(
@@ -82,8 +82,8 @@ def main():
   elif args.model_type == 'vone_resnet':
     model_ext = '_vone'
     if args.dataset == 'imagenet':
-      print("Loading VOneNet Model")
-      model = vonenet.get_model(model_arch='resnet50', pretrained=True, noise_mode=None)
+      print("Loading VOneNet Model").to(device)
+      model = vonenet.get_model(model_arch='resnet50', pretrained=True, noise_mode=None).to(device)
       print("VOneNet Loaded Successfully")
       # model = model.to(device)
       classifier = PyTorchClassifier(
@@ -109,7 +109,7 @@ def main():
     ])
     
     val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=8)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=8).to(device)
   
   attack = ProjectedGradientDescent(
     estimator=classifier,
