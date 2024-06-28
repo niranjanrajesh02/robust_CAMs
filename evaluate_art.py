@@ -26,11 +26,12 @@ def get_classwise_acc(model, attack, test_loader, num_classes=1000):
     # Generate adversarial examples
     adv_images_tensor = torch.tensor(adv_images)
     outputs = model._model(adv_images_tensor)
-    _, predicted = torch.max(outputs, 1)
-    c = (predicted == torch.tensor(labels)).squeeze()
+    _, preds = torch.max(outputs, 1)
+    
     for i in range(len(labels)):
-        label = labels[i]
-        class_correct[label] += c[i].item()
+        label = labels[i].item()
+        pred = preds[i].item()
+        class_correct[label] += int(pred == label)
         class_total[label] += 1
 
   classwise_acc = {i: class_correct[i] / class_total[i] if class_total[i] > 0 else 0 for i in range(num_classes)}
@@ -88,7 +89,7 @@ def main():
       transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     
-    val_dataset = datasets.ImageFolder(root='./data/imagenet', split='val', transform=transform)
+    val_dataset = datasets.ImageFolder(root='./data/imagenet', transform=transform)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=8)
   
   attack = ProjectedGradientDescent(
