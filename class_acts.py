@@ -124,7 +124,7 @@ def main():
     model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
 
     # batch size 1 allows us to get class of each image to sort into class_activations
-    dl = ds.make_loaders(batch_size=1, workers=1, only_val=True)
+    dl = ds.make_loaders(batch_size=1, workers=1, only_val=True)[1]
     
     num_classes = 10
     if args.dataset == 'imagenet':
