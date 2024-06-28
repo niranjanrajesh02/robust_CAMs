@@ -35,8 +35,8 @@ def get_classwise_acc(m, test_loader, attack_kwargs, eps, ds_name='cifar'):
   class_correct = {i: 0 for i in range(num_classes)}
   class_total = {i: 0 for i in range(num_classes)}
 
-  for param in m.model.parameters():
-    param.requires_grad = False
+  # for param in m.model.parameters():
+  #   param.requires_grad = False
 
   print("Getting Classwise Accuracy ...")
 
@@ -111,7 +111,7 @@ def main():
     print("Loading VOneNet Model")
     v1_model = vonenet.get_model(model_arch='resnet50', pretrained=True)
     print("VOneNet Model Loaded Successfully from Vonenet, now loading into Robustness Library")
-    model, _ = model_utils.make_and_restore_model(arch=v1_model.module, dataset=ds)
+    model, _ = model_utils.make_and_restore_model(arch=v1_model.module, dataset=ds, add_custom_forward=True)
     print("Model Loaded Successfully")
   elif args.model_type != 'vone_resnet':
     if args.dataset  == 'cifar':

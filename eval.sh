@@ -8,6 +8,6 @@
 #SBATCH -o ev_out.log
 #SBATCH -e ev_err.log
 #SBATCH --gres=gpu:1
-srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type vone_resnet --dataset imagenet --eps 0
+
 srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type vone_resnet --dataset imagenet --eps 2
 srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type vone_resnet --dataset imagenet --eps 3
