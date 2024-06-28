@@ -18,20 +18,20 @@ def get_classwise_acc(model, attack, test_loader, num_classes=1000):
 
   print("Getting Classwise Accuracy ...")
 
-  with torch.no_grad():
-    for inputs, labels in tqdm(test_loader):
-      inputs, labels = inputs.cuda(), labels.cuda()
+  
+  for inputs, labels in tqdm(test_loader):
+    inputs, labels = inputs.numpy(), labels.numpy()
 
-      adv_images = attack.generate(x=inputs)
-      # Generate adversarial examples
-      adv_images_tensor = torch.tensor(adv_images)
-      outputs = model._model(adv_images_tensor)
-      _, predicted = torch.max(outputs, 1)
-      c = (predicted == torch.tensor(labels)).squeeze()
-      for i in range(len(labels)):
-          label = labels[i]
-          class_correct[label] += c[i].item()
-          class_total[label] += 1
+    adv_images = attack.generate(x=inputs)
+    # Generate adversarial examples
+    adv_images_tensor = torch.tensor(adv_images)
+    outputs = model._model(adv_images_tensor)
+    _, predicted = torch.max(outputs, 1)
+    c = (predicted == torch.tensor(labels)).squeeze()
+    for i in range(len(labels)):
+        label = labels[i]
+        class_correct[label] += c[i].item()
+        class_total[label] += 1
 
   classwise_acc = {i: class_correct[i] / class_total[i] if class_total[i] > 0 else 0 for i in range(num_classes)}
 
@@ -40,7 +40,7 @@ def get_classwise_acc(model, attack, test_loader, num_classes=1000):
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
+  parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained, vone_resnet or robust', default='standard')
   parser.add_argument('--eps', type=float, help='Epsilon value for adversarial training', default=0)
   parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='imagenet')
   args = parser.parse_args()
@@ -88,7 +88,7 @@ def main():
       transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     
-    val_dataset = datasets.ImageNet(root='./imagenet', split='val', transform=transform)
+    val_dataset = datasets.ImageFolder(root='./data/imagenet', split='val', transform=transform)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=8)
   
   attack = ProjectedGradientDescent(
@@ -101,7 +101,6 @@ def main():
   )
 
   class_accuracies = get_classwise_acc(model, attack, val_loader)
-
   save_path= f'./{args.dataset}_r50{model_ext}_train'
   if not os.path.exists(save_path):
     os.makedirs(save_path)
