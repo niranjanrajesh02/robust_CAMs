@@ -78,13 +78,13 @@ def main():
   attack_kwargs = {
       'constraint': '2',  # l-inf constraint
       'eps': args.eps,  # epsilon value for l-inf
-      'step_size': 0.1,  # step size for PGD
-      'iterations': 10,  # number of iterations for PGD
+      'step_size': args.eps/5,  # step size for PGD
+      'iterations': 7,  # number of iterations for PGD
       'do_tqdm': False
   }
 
   assert args.dataset in ['cifar', 'restricted_imagenet', 'imagenet'], "Invalid dataset"
-  assert args.model_type in ['standard', 'adv_trained', 'robust'], "Invalid model type"
+  assert args.model_type in ['standard', 'adv_trained', 'robust', 'vone_resnet'], "Invalid model type"
 
   print("\n\n=============================================")
   print(f"Dataset: {args.dataset}, Model Type: {args.model_type}, Epsilon: {args.eps}")
@@ -94,6 +94,8 @@ def main():
     model_ext = '_adv'
   elif args.model_type == 'robust':
     model_ext = '_robust'
+  elif args.model_type == 'vone_resnet':
+    model_ext = '_vone_resnet'
 
 
   if args.dataset == 'cifar':
@@ -104,15 +106,27 @@ def main():
     ds = ImageNet('./data/imagenet')
   print("Dataset Found. Loading Model ...")
 
-  if args.dataset == 'cifar':
-    model_path = f'/home/venkat/niranjan/robust_CAMs/cifar_r50{model_ext}_train/checkpoint.pt.latest'
-  else:
-    model_path = f'/home/venkat/niranjan/robust_CAMs/models/{args.dataset}_r50{model_ext}_train.pt'
-
-  model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
-  print("Model Loaded Successfully")
-  
-  test_loader = ds.make_loaders(batch_size=10, workers=1, only_val=True)[1]
+  if args.model_type == 'vone_resnet' and args.dataset == 'imagenet':
+    import vonenet
+    print("Loading VOneNet Model")
+    v1_model = vonenet.get_model(model_arch='resnet50', pretrained=True)
+    print("VOneNet Model Loaded Successfully from Vonenet, now loading into Robustness Library")
+    model, _ = model_utils.make_and_restore_model(arch=v1_model.module, dataset=ds)
+    print("Model Loaded Successfully")
+  elif args.model_type != 'vone_resnet':
+    if args.dataset  == 'cifar':
+      model_path = f'./cifar_r50{model_ext}_train/checkpoint.pt.latest'
+    elif args.model_type == 'vone_resnet' and args.dataset == 'imagenet':
+      import vonenet
+      v1_model = vonenet.get_model(model_arch='resnet50', pretrained=True)
+      model_path = f'./vone_resnet_r50{model_ext}_train/checkpoint.pt.latest'
+    else:
+      model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
+    
+    model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
+    print("Model Loaded Successfully")
+    
+  test_loader = ds.make_loaders(batch_size=256, workers=1, only_val=True)[1]
   print("Test Loader Created")
 
   model.eval()
@@ -120,7 +134,7 @@ def main():
   print("Classwise Accuracy: ", classwise_acc)
 
   # store classwise accuracy as a pickle file
-  save_path= f'/home/venkat/niranjan/robust_CAMs/{args.dataset}_r50{model_ext}_train'
+  save_path= f'./{args.dataset}_r50{model_ext}_train'
   if not os.path.exists(save_path):
     os.makedirs(save_path)
 
