@@ -58,8 +58,24 @@ def main():
   model_ext = ''
   model = None
 
+
   if args.model_type == 'adv_trained':
     model_ext = '_adv'
+  elif args.model_type == 'standard':
+    from torchvision.models import resnet50
+    model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
+    model = resnet50(pretrained=False)
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
+    classifier = PyTorchClassifier(
+      model=model,
+      loss = torch.nn.CrossEntropyLoss(),
+      optimizer = torch.optim.SGD(model.parameters(), lr=0.001),
+      input_shape=(3, 224, 224),
+      nb_classes=1000,
+      clip_values=(0, 1)
+    )
+    print("Standard Resnet Loaded Successfully")
   elif args.model_type == 'vone_resnet':
     model_ext = '_vone'
     if args.dataset == 'imagenet':
@@ -89,7 +105,7 @@ def main():
       transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     
-    val_dataset = datasets.ImageFolder(root='./data/imagenet', transform=transform)
+    val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=8)
   
   attack = ProjectedGradientDescent(
