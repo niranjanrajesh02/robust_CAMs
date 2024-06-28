@@ -20,7 +20,9 @@ def get_classwise_acc(model, attack, test_loader, num_classes=1000):
 
   
   for inputs, labels in tqdm(test_loader):
-    inputs, labels = inputs.numpy(), labels.numpy()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    inputs, labels = inputs.to(device), labels.to(device)
+    # inputs, labels = inputs.numpy(), labels.numpy()
 
     adv_images = attack.generate(x=inputs)
     # Generate adversarial examples
@@ -58,6 +60,8 @@ def main():
   model_ext = ''
   model = None
 
+  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  print("Device: ", device)
 
   if args.model_type == 'adv_trained':
     model_ext = '_adv'
@@ -66,6 +70,7 @@ def main():
     model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
     model = resnet50(pretrained=False)
     model.load_state_dict(torch.load(model_path))
+    model.to(device)
     model.eval()
     classifier = PyTorchClassifier(
       model=model,
@@ -82,7 +87,7 @@ def main():
       print("Loading VOneNet Model")
       model = vonenet.get_model(model_arch='resnet50', pretrained=True, noise_mode=None)
       print("VOneNet Loaded Successfully")
-  
+      model = model.to(device)
       classifier = PyTorchClassifier(
         model=model,
         loss = torch.nn.CrossEntropyLoss(),
@@ -108,6 +113,7 @@ def main():
     val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=8)
   
+  classifier.to(device)
   attack = ProjectedGradientDescent(
     estimator=classifier,
     norm=2,
@@ -116,6 +122,7 @@ def main():
     max_iter=7,
     targeted=False
   )
+  
 
   class_accuracies = get_classwise_acc(model, attack, val_loader)
   save_path= f'./{args.dataset}_r50{model_ext}_train'
