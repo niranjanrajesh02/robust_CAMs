@@ -31,10 +31,22 @@ def get_activations(model, input):
     in_feats = input[0].detach().cpu().numpy()
     activations.append(in_feats)
     return
+  
+  print(model)
 
+  h1 = None
+  
   # register hook at the final classification layer (input of final layer == activations of penultimate/representation layer)
-  h1 = model.linear.register_forward_hook(activation_hook)
-  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  for name, module in model.named_children():
+    if name == 'linear':
+      h1 = module.register_forward_hook(activation_hook)
+    elif name == 'fc':
+      h1 = module.register_forward_hook(activation_hook)
+
+  
+  if h1 == None:
+    print("No Linear Layer found in the model.")
+    return
   
   model.eval()
   for param in model.parameters():
@@ -158,7 +170,6 @@ def main():
 
     with open(f'{save_path}/class_acts_test.pkl', 'wb') as f:
       pickle.dump(class_activations, f)
-    
     return
 
   elif args.task == 'dims':
