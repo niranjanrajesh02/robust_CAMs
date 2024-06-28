@@ -20,14 +20,20 @@ import cox.store
 import pickle
 from tqdm import tqdm
 
-def get_classwise_acc(m, test_loader, attack_kwargs, eps):
+def get_classwise_acc(m, test_loader, attack_kwargs, eps, ds_name='cifar'):
   if eps == 0:
     print("No attack being performed")
   else:
     print(f"Attack being performed with Epsilon: {eps}")
   
-  class_correct = {i: 0 for i in range(10)}
-  class_total = {i: 0 for i in range(10)}
+  num_classes = 10
+  if ds_name == 'imagenet':
+    num_classes = 1000
+  elif ds_name == 'restricted_imagenet':
+    num_classes = 9
+  
+  class_correct = {i: 0 for i in range(num_classes)}
+  class_total = {i: 0 for i in range(num_classes)}
 
   for param in m.model.parameters():
     param.requires_grad = False
@@ -55,7 +61,7 @@ def get_classwise_acc(m, test_loader, attack_kwargs, eps):
       class_total[label] += 1
 
   # Calculate classwise accuracy
-  classwise_acc = {i: class_correct[i] / class_total[i] if class_total[i] > 0 else 0 for i in range(10)}
+  classwise_acc = {i: class_correct[i] / class_total[i] if class_total[i] > 0 else 0 for i in range(num_classes)}
 
   return classwise_acc
 
@@ -82,7 +88,7 @@ def main():
 
   print("\n\n=============================================")
   print(f"Dataset: {args.dataset}, Model Type: {args.model_type}, Epsilon: {args.eps}")
-  print("=============================================\n\n")
+  print("=============================================")
   model_ext = ''
   if args.model_type == 'adv_trained':
     model_ext = '_adv'

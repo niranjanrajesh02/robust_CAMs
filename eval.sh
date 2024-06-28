@@ -9,3 +9,7 @@
 #SBATCH -e ev_err.log
 #SBATCH --gres=gpu:1
 srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type standard --eps 0 --dataset restricted_imagenet
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type standard --eps 3 --dataset restricted_imagenet
+
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type adv_trained --eps 0 --dataset restricted_imagenet
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type adv_trained --eps 3 --dataset restricted_imagenet
