@@ -45,6 +45,7 @@ def get_classwise_acc(m, test_loader, attack_kwargs, eps, ds_name='cifar'):
 
     # Generate adversarial examples
     if eps != 0:
+      torch.autograd.set_detect_anomaly(True)
       _, adv_in = m(inputs, labels, make_adv=True, **attack_kwargs)
       out, _ = m(adv_in)
       preds = torch.argmax(out, dim=1)
@@ -67,7 +68,7 @@ def get_classwise_acc(m, test_loader, attack_kwargs, eps, ds_name='cifar'):
 
 
 def main():
-  parser = argparse.ArgumentParser(description='Train a model on CIFAR')
+  parser = argparse.ArgumentParser()
   parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
   parser.add_argument('--eps', type=float, help='Epsilon value for adversarial training', default=0)
   parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='cifar')
