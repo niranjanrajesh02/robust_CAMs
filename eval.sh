@@ -9,5 +9,5 @@
 #SBATCH -e ev_err.log
 #SBATCH --cpus-per-task=100
 
-srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type standard --dataset imagenet --eps 0
-srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_type standard --dataset imagenet --eps 3
+srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_type standard --dataset imagenet --eps 0
+srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_type standard --dataset imagenet --eps 3
