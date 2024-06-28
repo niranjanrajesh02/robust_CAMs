@@ -12,7 +12,7 @@ import pickle
 import os
 
 
-def get_classwise_acc(model, attack, test_loader, num_classes=1000):
+def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000):
   class_correct = {i: 0 for i in range(num_classes)}
   class_total = {i: 0 for i in range(num_classes)}
 
@@ -126,7 +126,7 @@ def main():
   )
   
 
-  class_accuracies = get_classwise_acc(model, attack, val_loader)
+  class_accuracies = get_classwise_acc(model, attack, args.eps, val_loader)
   save_path= f'./{args.dataset}_r50{model_ext}_train'
   if not os.path.exists(save_path):
     os.makedirs(save_path)
