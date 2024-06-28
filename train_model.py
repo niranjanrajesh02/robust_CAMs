@@ -32,14 +32,6 @@ def init_model_data(ds_name):
     print("CIFAR being imported")
     batch_size = 128
     ds = CIFAR('./data')
-  elif ds_name == 'RestrictedImagenet':
-    print("Restricted ImageNeta being imported")
-    batch_size = 256
-    ds = RestrictedImageNet('./data')
-  elif ds_name == 'ImageNet':
-    print("ImageNet being imported")
-    batch_size = 256
-    ds = datasets.ImageNet('./data')
     
 
   m, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds)
@@ -74,15 +66,9 @@ def train_model(adv_train=False, m=None, train_loader=None, val_loader=None, ds_
   if adv_train:
       train_kwargs['adv_train'] = 1
   
-  # default was for CIFAR
-  if ds_name == 'RestrictedImagenet':
-    train_kwargs['epochs'] = 150
-    train_kwargs['batch_size'] = 256
-    train_kwargs['weight_decay'] = 1e-4
-  
   train_args = Parameters(train_kwargs)
 
-  ds_ref = CIFAR if ds_name == 'CIDAR' else RestrictedImageNet
+  ds_ref = CIFAR if ds_name == 'CIFAR' else RestrictedImageNet
   # Fill whatever parameters are missing from the defaults
   train_args = defaults.check_and_fill_args(train_args,
                           defaults.TRAINING_ARGS, ds_ref)
@@ -189,7 +175,7 @@ def main():
   import argparse
   parser = argparse.ArgumentParser(description='Train a model')
   parser.add_argument('--train_mode',  help='Training Mode: standard, adv or robust', type=str, default='standard')
-  parser.add_argument('--dataset',  help='Dataset to use', type=str, default='CIFAR10')
+  parser.add_argument('--dataset',  help='Dataset to use', type=str, default='CIFAR')
   args = parser.parse_args()
   assert args.dataset in ['CIFAR', 'RestrictedImageNet', 'ImageNet'], "Invalid dataset"
   assert args.train_mode in ['standard', 'adv', 'robust'], "Invalid training mode"

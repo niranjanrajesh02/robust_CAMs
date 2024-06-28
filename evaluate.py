@@ -12,9 +12,8 @@ class DummyModule:
 sys.modules['torchvision.models.utils'] = DummyModule()
 
 from robustness import model_utils, datasets, train, defaults
-from robustness.datasets import CIFAR
+from robustness.datasets import CIFAR, RestrictedImageNet, ImageNet
 import os
-ds = CIFAR('./data')
 import argparse
 import torch
 import cox.store
@@ -65,8 +64,10 @@ def main():
   parser = argparse.ArgumentParser(description='Train a model on CIFAR')
   parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
   parser.add_argument('--eps', type=float, help='Epsilon value for adversarial training', default=0.5)
+  parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='cifar')
   args = parser.parse_args()
-
+  
+  args.dataset = args.dataset.lower()
   
   attack_kwargs = {
       'constraint': '2',  # l-inf constraint
@@ -76,35 +77,53 @@ def main():
       'do_tqdm': False
   }
 
+  assert args.dataset in ['cifar', 'restricted_imagenet', 'imagenet'], "Invalid dataset"
   assert args.model_type in ['standard', 'adv_trained', 'robust'], "Invalid model type"
+
   print("\n\n=============================================")
-  print(f"Model Type: {args.model_type}, Epsilon: {args.eps}")
+  print(f"Dataset: {args.dataset}, Model Type: {args.model_type}, Epsilon: {args.eps}")
+  print("=============================================\n\n")
   model_ext = ''
   if args.model_type == 'adv_trained':
     model_ext = '_adv'
   elif args.model_type == 'robust':
     model_ext = '_robust'
 
-  model_path = f'/home/venkat/niranjan/robust_CAMs/cifar_r50{model_ext}_train/checkpoint.pt.latest'
-  print(f"Trying to load Model at Path: {model_path}")
+
+  if args.dataset == 'cifar':
+    ds = CIFAR('./data')
+  elif args.dataset == 'restricted_imagenet':
+    ds = RestrictedImageNet('./data/imagenet')
+  elif args.dataset == 'imagenet':
+    ds = ImageNet('./data/imagenet')
+
+  print("Dataset Found. Loading Model ...")
+
+  if args.dataset == 'cifar':
+    model_path = f'/home/venkat/niranjan/robust_CAMs/cifar_r50{model_ext}_train/checkpoint.pt.latest'
+  else:
+    model_path = f'/home/venkat/niranjan/robust_CAMs/models/{args.dataset}_r50{model_ext}_train/checkpoint.pt'
 
   model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
   print("Model Loaded Successfully")
   
   test_loader = ds.make_loaders(batch_size=10, workers=1, only_val=True)[1]
+  print("Test Loader Created")
+
   model.eval()
-
-
   classwise_acc = get_classwise_acc(model, test_loader, attack_kwargs, args.eps)
   print("Classwise Accuracy: ", classwise_acc)
 
   # store classwise accuracy as a pickle file
-  with open(f'/home/venkat/niranjan/robust_CAMs/cifar_r50{model_ext}_train/classwise_acc_e{args.eps}.pkl', 'wb') as f:
+  save_path= f'/home/venkat/niranjan/robust_CAMs/{args.dataset}_r50{model_ext}_train'
+  if not os.path.exists(save_path):
+    os.makedirs(save_path)
+
+  with open(f'{save_path}/classwise_acc_e{args.eps}.pkl', 'wb') as f:
     pickle.dump(classwise_acc, f)
   
-  print("Classwise Accuracy stored as pickle file")
+  print(f"Classwise Accuracy stored as pickle file for model type: {args.model_type} and dataset: {args.dataset} with epsilon: {args.eps}")
 
-  
   return
 
 if __name__ == '__main__':
