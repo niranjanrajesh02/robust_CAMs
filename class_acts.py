@@ -53,8 +53,8 @@ def get_activations(model, input):
   
   return activations_arr
 
-def estimate_manifold_dim(model_ext):
-  class_acts_file = f'./data/cifar_r50{model_ext}_train/class_acts_test.pkl'
+def estimate_manifold_dim(model_ext, dataset_name='cifar'):
+  class_acts_file = f'./{dataset_name}_{model_ext}_train/class_acts_test.pkl'
 
   # load class activations
   if os.path.exists(class_acts_file):
@@ -82,7 +82,7 @@ def estimate_manifold_dim(model_ext):
   
   print("Classwise Estimated Manifold Dimensions: ", class_dims)
 
-  with open(f'./data/cifar_r50{model_ext}_train/class_dims_test.pkl', 'wb') as f:
+  with open(f'./{dataset_name}_{model_ext}_train/class_dims_test.pkl', 'wb') as f:
     pickle.dump(class_dims, f)
 
   return
@@ -90,11 +90,13 @@ def estimate_manifold_dim(model_ext):
 def main():
 
   parser = argparse.ArgumentParser(description='Get Class Activations')
+  parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='cifar')
   parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
-  parser.add_argument('--data_split', type=str, help='Which data loader to use: train or test', default='test')
   parser.add_argument('--task', type=str, help='Task to perform: acts or dims', default='acts')
-  args = parser.parse_args()
 
+  args = parser.parse_args()
+  args.dataset = args.dataset.lower()
+  
   model_ext = ''
   if args.model_type == 'adv_trained':
     model_ext = '_adv'
@@ -102,25 +104,38 @@ def main():
     model_ext = '_robust'
 
   if args.task == 'acts':
-    from robustness.datasets import CIFAR
+    from robustness.datasets import CIFAR, ImageNet, RestrictedImageNet
     from robustness import model_utils
 
-    model_path = f'./cifar_r50{model_ext}_train/checkpoint.pt.latest'
-    ds = CIFAR('./data')
+    if args.dataset == 'cifar':
+      ds = CIFAR('./data')
+    elif args.dataset == 'restricted_imagenet':
+      ds = RestrictedImageNet('./data/imagenet')
+    elif args.dataset == 'imagenet':
+      ds = ImageNet('./data/imagenet')
+    print("Dataset Found. Loading Model ...")
+
+    if args.dataset == 'cifar':
+      model_path = f'./cifar_r50{model_ext}_train/checkpoint.pt.latest'
+    else:
+      model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
     print("Trying to load model from path: ", model_path)
+
     model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
 
     # batch size 1 allows us to get class of each image to sort into class_activations
-    train_loader , test_loader = ds.make_loaders(batch_size=1, workers=1)
-    dl = None
-    if args.data_split == 'train':
-      dl = train_loader
-    elif args.data_split == 'test':
-      dl = test_loader
+    dl = ds.make_loaders(batch_size=1, workers=1, only_val=True)
+    
+    num_classes = 10
+    if args.dataset == 'imagenet':
+      num_classes = 1000
+    elif args.dataset == 'restricted_imagenet':
+      num_classes = 9
 
-    class_activations = {i: [] for i in range(10)}
+    class_activations = {i: [] for i in range(num_classes)}
 
     print("Getting Class Activations ...")
+
     for input, label in tqdm(dl):
       input, label = input.cuda(), label.cuda()
       # get class index and corresponding activations
@@ -130,12 +145,18 @@ def main():
       class_activations[label].append(activations)
 
     print("Class Activations obtained.")
+
     for key in class_activations:
       class_activations[key] = np.array(class_activations[key])
       print(f"Class {key} Activations Shape: ", class_activations[key].shape)
 
     print("Saving Class Activations ...") 
-    with open(f'./cifar_r50{model_ext}_train/class_acts_{args.data_split}.pkl', 'wb') as f:
+    
+    save_path= f'/home/venkat/niranjan/robust_CAMs/{args.dataset}_r50{model_ext}_train'
+    if not os.path.exists(save_path):
+      os.makedirs(save_path)
+
+    with open(f'{save_path}/class_acts_test.pkl', 'wb') as f:
       pickle.dump(class_activations, f)
     
     return

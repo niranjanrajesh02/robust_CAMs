@@ -102,7 +102,6 @@ def main():
     ds = RestrictedImageNet('./data/imagenet')
   elif args.dataset == 'imagenet':
     ds = ImageNet('./data/imagenet')
-
   print("Dataset Found. Loading Model ...")
 
   if args.dataset == 'cifar':
@@ -117,7 +116,7 @@ def main():
   print("Test Loader Created")
 
   model.eval()
-  classwise_acc = get_classwise_acc(model, test_loader, attack_kwargs, args.eps)
+  classwise_acc = get_classwise_acc(model, test_loader, attack_kwargs, args.eps, ds_name=args.dataset)
   print("Classwise Accuracy: ", classwise_acc)
 
   # store classwise accuracy as a pickle file
