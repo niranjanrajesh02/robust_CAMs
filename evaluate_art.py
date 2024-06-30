@@ -11,6 +11,7 @@ from art.estimators.classification import PyTorchClassifier
 import pickle
 import os
 import numpy as np
+from torchvision.models import resnet50
 
 def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000):
   class_correct = {i: 0 for i in range(num_classes)}
@@ -26,7 +27,7 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000):
     if eps != 0:
       adv_images = attack.generate(x=inputs)
       # Generate adversarial examples
-      adv_images_tensor = torch.tensor(adv_images)
+      adv_images_tensor = torch.tensor(adv_images).to(device)
       outputs = model.predict(adv_images_tensor)
       preds = np.argmax(outputs, axis=1)
     else:
@@ -76,7 +77,7 @@ def main():
     print("Adversarially Trained Resnet Loaded Successfully")
 
   elif args.model_type == 'standard':
-    from torchvision.models import resnet50
+    
     model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
     model = resnet50(pretrained=False).to(device)
     model.load_state_dict(torch.load(model_path))
@@ -137,7 +138,7 @@ def main():
 
   print("Classwise Accuracies: ", class_accuracies)
   print(f"Saving Classwise Accuracies to {save_path}")
-  
+
   with open(f'./{save_path}/classwise_acc_e{args.eps}.pkl', 'wb') as f:
     pickle.dump(class_accuracies, f)
 
