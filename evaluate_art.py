@@ -34,13 +34,15 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000):
   
   for inputs, labels in tqdm(test_loader):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    inputs, labels = inputs.to(device).numpy(), labels.to(device).numpy()
+    inputs, labels = inputs.to(device), labels.to(device)
+
     if eps != 0:
       adv_images = attack.generate(x=inputs)
       # Generate adversarial examples
       adv_images_tensor = torch.tensor(adv_images).to(device)
       outputs = model.predict(adv_images_tensor)
       preds = np.argmax(outputs, axis=1)
+
     else:
       outputs = model.predict(inputs)
       preds = np.argmax(outputs, axis=1)
@@ -70,7 +72,6 @@ def main():
   print("\n\n=============================================")
   print(f"Dataset: {args.dataset}, Model Type: {args.model_type}, Epsilon: {args.eps}")
   print("=============================================")
-
   # * Loading the Model
   model_ext = ''
   model = None
@@ -87,8 +88,8 @@ def main():
     from robustness.datasets import ImageNet
     ds = ImageNet('data/imagenet')
     model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
-    model = model.module.to(device)
-    
+    model = model.model.to(device)
+
     print("Adversarially Trained Resnet Loaded Successfully")
 
   elif args.model_type == 'standard':
@@ -113,13 +114,15 @@ def main():
   assert model is not None, "Model not loaded successfully"
   model.eval()
   
+  device_str = 'gpu' if torch.cuda.is_available() else 'cpu'
   classifier = PyTorchClassifier(
         model=model,
         loss = torch.nn.CrossEntropyLoss(),
         optimizer = torch.optim.SGD(model.parameters(), lr=0.001),
         input_shape=(3, 224, 224),
         nb_classes=1000,
-        clip_values=(0, 1)
+        clip_values=(0, 1),
+        device_type=device_str
       )
 
   print("Model compiled successfully as ART Classifier")
