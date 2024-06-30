@@ -117,10 +117,6 @@ def main():
   elif args.model_type != 'vone_resnet':
     if args.dataset  == 'cifar':
       model_path = f'./cifar_r50{model_ext}_train/checkpoint.pt.latest'
-    elif args.model_type == 'vone_resnet' and args.dataset == 'imagenet':
-      import vonenet
-      v1_model = vonenet.get_model(model_arch='resnet50', pretrained=True)
-      model_path = f'./vone_resnet_r50{model_ext}_train/checkpoint.pt.latest'
     else:
       model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
     

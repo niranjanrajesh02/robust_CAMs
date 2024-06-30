@@ -1,5 +1,17 @@
 import sys
 import torch
+def load_state_dict_from_url(*args, **kwargs):
+    return torch.hub.load_state_dict_from_url(*args, **kwargs)
+
+# Create a dummy module
+class DummyModule:
+    def __init__(self):
+        self.load_state_dict_from_url = load_state_dict_from_url
+sys.modules['torchvision.models.utils'] = DummyModule()
+
+
+import sys
+import torch
 import pickle
 from tqdm import tqdm
 import argparse
@@ -23,7 +35,6 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000):
   for inputs, labels in tqdm(test_loader):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     inputs, labels = inputs.to(device).numpy(), labels.to(device).numpy()
-
     if eps != 0:
       adv_images = attack.generate(x=inputs)
       # Generate adversarial examples
@@ -71,8 +82,13 @@ def main():
   if args.model_type == 'adv_trained':
     model_ext = '_adv'
     model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
-    model = resnet50(pretrained=False).to(device)
-    model.load_state_dict(torch.load(model_path))
+
+    from robustness import model_utils
+    from robustness.datasets import ImageNet
+    ds = ImageNet('data/imagenet')
+    model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
+    model = model.module.to(device)
+    
     print("Adversarially Trained Resnet Loaded Successfully")
 
   elif args.model_type == 'standard':
