@@ -21,7 +21,7 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000):
 
   
   for inputs, labels in tqdm(test_loader):
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     inputs, labels = inputs.to(device).numpy(), labels.to(device).numpy()
 
     if eps != 0:
@@ -64,10 +64,9 @@ def main():
   model_ext = ''
   model = None
 
-
-  # ! ONLY CPU
-  device = torch.device("cpu")
+  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   print("Device: ", device)
+
   model = None
   if args.model_type == 'adv_trained':
     model_ext = '_adv'
