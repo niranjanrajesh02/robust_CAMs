@@ -33,7 +33,8 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000):
 
   
   for inputs, labels in tqdm(test_loader):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     inputs, labels = inputs.to(device), labels.to(device)
 
     if eps != 0:
@@ -76,7 +77,8 @@ def main():
   model_ext = ''
   model = None
 
-  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  device = torch.device("cpu")
   print("Device: ", device)
 
   model = None
@@ -114,7 +116,7 @@ def main():
   assert model is not None, "Model not loaded successfully"
   model.eval()
   
-  device_str = 'gpu' if torch.cuda.is_available() else 'cpu'
+  device_str = 'cpu'
   classifier = PyTorchClassifier(
         model=model,
         loss = torch.nn.CrossEntropyLoss(),
