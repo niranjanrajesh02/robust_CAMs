@@ -94,7 +94,7 @@ def main():
     from torchvision.models import ResNet50_Weights
     # preproc = ResNet50_Weights.IMAGENET1K_V2.transforms()
     model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
-    model, preproc = get_model(arch='resnet50', dataset=args.dataset, train_mode='standard', weights_path=model_path, with_transforms=True)
+    model = get_model(arch='resnet50', dataset=args.dataset, train_mode='standard', weights_path=model_path)
     model = model.to(device)
 
 
