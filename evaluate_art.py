@@ -47,11 +47,12 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
         preds = torch.argmax(outputs, dim=1)
       
     else:
-      inputs = inputs.detach().cpu().numpy().astype(np.float32)
-      labels = labels.detach().cpu().numpy().astype(np.float32)
-      adv_input = attack.generate(x=inputs, y=labels)
-      output = model.predict(adv_input)
-      print(adv_input.shape, output.shape)
+      if eps != 0:
+        inputs = inputs.detach().cpu().numpy().astype(np.float32)
+        labels = labels.detach().cpu().numpy().astype(np.float32)
+        adv_input = attack.generate(x=inputs, y=labels)
+        output = model.predict(adv_input)
+        print(adv_input.shape, output.shape)
      
 
 
@@ -81,7 +82,10 @@ def main():
   print(f"Dataset: {args.dataset}, Model Type: {args.model_type}, Epsilon: {args.eps}")
   print("=============================================")
   
-  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  if args.model_type == 'vone_resnet':
+    device = torch.device("cpu")
+  else:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   # device = torch.device("cpu") 
   print("Device: ", device)
 
@@ -136,7 +140,7 @@ def main():
     print("Foolbox Model and Attack Prepared with params: ", attack_params)
 
 
-  class_accuracies = get_classwise_acc(fmodel, attack, args.eps, val_loader, num_classes=1000, device=device, arch=args.model_type)
+  class_accuracies = get_classwise_acc(fmodel, attack, args.eps, val_loader, num_classes=1000, device=device, model_type=args.model_type)
   
   save_path= f'./{args.dataset}_r50{model_ext}_train'
   if not os.path.exists(save_path):
