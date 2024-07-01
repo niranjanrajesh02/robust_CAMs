@@ -18,36 +18,43 @@ import argparse
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import vonenet
-# from art.attacks.evasion import ProjectedGradientDescent
-# from art.estimators.classification import PyTorchClassifier
+
 import pickle
 import os
 import numpy as np
 from torchvision.models import resnet50
 from _utils.model import get_model
-from _utils.attacks import prepare_attack
+from _utils.attacks import prepare_attack, prepare_art_attack
 
-def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=None):
+def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=None, model_type='standard'):
   class_correct = {i: 0 for i in range(num_classes)}
   class_total = {i: 0 for i in range(num_classes)}
 
   print("Getting Classwise Accuracy for epsilon: ", eps)
-  
 
   for inputs, labels in tqdm(test_loader):
-    inputs, labels = inputs.to(device), labels.to(device)
-
-    if eps != 0:
-      img_adv, _, _ = attack(model, inputs, labels, epsilons=[eps])
-      # Generate adversarial examples
-      img_adv = img_adv[0]
-      outputs = model(img_adv)
-      preds = torch.argmax(outputs, dim=1)
-      del img_adv
-    else:
-      outputs = model(inputs)
-      preds = torch.argmax(outputs, dim=1)
     
+    if model_type != 'vone_resnet':
+      if eps != 0:
+        img_adv, _, _ = attack(model, inputs, labels, epsilons=[eps])
+        # Generate adversarial examples
+        img_adv = img_adv[0]
+        outputs = model(img_adv)
+        preds = torch.argmax(outputs, dim=1)
+      
+      else:
+        outputs = model(inputs)
+        preds = torch.argmax(outputs, dim=1)
+      
+    else:
+      inputs = inputs.detach().cpu().numpy().astype(np.float32)
+      labels = labels.detach().cpu().numpy().astype(np.float32)
+      adv_input = attack.generate(x=inputs, y=labels)
+      output = model.predict(adv_input)
+      print(adv_input.shape, output.shape)
+     
+
+
     for i in range(len(labels)):
         label = labels[i].item()
         pred = preds[i].item()
@@ -121,11 +128,15 @@ def main():
   # * Prepare the attack
 
   attack_params = {'attack_type': 'L2_PGD', 'epsilon': args.eps, 'iterations': 7}
-  fmodel, attack = prepare_attack(model, attack_params, transforms=transform)
-  print("Foolbox Model and Attack Prepared with params: ", attack_params)
+  if args.model_type == 'vone_resnet':
+    model, attack = prepare_art_attack(model, attack_params)
+    print("ART Model and Attack Prepared with params: ", attack_params)
+  else:
+    fmodel, attack = prepare_attack(model, attack_params, transforms=transform)
+    print("Foolbox Model and Attack Prepared with params: ", attack_params)
 
 
-  class_accuracies = get_classwise_acc(fmodel, attack, args.eps, val_loader, num_classes=1000, device=device)
+  class_accuracies = get_classwise_acc(fmodel, attack, args.eps, val_loader, num_classes=1000, device=device, arch=args.model_type)
   
   save_path= f'./{args.dataset}_r50{model_ext}_train'
   if not os.path.exists(save_path):
