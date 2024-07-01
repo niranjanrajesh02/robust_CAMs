@@ -111,7 +111,7 @@ def main():
     ])
     
     val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=1)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=256, shuffle=False, num_workers=1)
   
   # * Prepare the attack
 
