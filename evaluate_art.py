@@ -129,7 +129,7 @@ def main():
 
   attack_params = {'attack_type': 'L2_PGD', 'epsilon': args.eps, 'iterations': 7}
   if args.model_type == 'vone_resnet':
-    model, attack = prepare_art_attack(model, attack_params)
+    fmodel, attack = prepare_art_attack(model, attack_params)
     print("ART Model and Attack Prepared with params: ", attack_params)
   else:
     fmodel, attack = prepare_attack(model, attack_params, transforms=transform)

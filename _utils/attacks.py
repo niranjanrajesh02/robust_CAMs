@@ -32,14 +32,16 @@ def prepare_art_attack(model, attack_params, arch='vone_resnet'):
             input_shape=(3, 224, 224),
             nb_classes=1000,
         )
-
-  attack = ProjectedGradientDescent(
-            estimator=classifier, 
-            norm= 2,
-            max_iter=attack_params['iterations'], 
-            eps=attack_params['epsilon'], 
-            eps_step= attack_params['epsilon'] / 5,
-            targeted=False,
-        )
+  attack = None
+  if attack_params['epsilon'] > 0:
+    attack = ProjectedGradientDescent(
+              estimator=classifier, 
+              norm= 2,
+              max_iter=attack_params['iterations'], 
+              eps=attack_params['epsilon'], 
+              eps_step= attack_params['epsilon'] / 5,
+              targeted=False,
+          )
+  
 
   return classifier, attack
