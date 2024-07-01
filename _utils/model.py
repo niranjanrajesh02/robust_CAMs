@@ -34,9 +34,7 @@ def get_model(arch, dataset='imagenet', train_mode='standard', weights_path=None
             model = resnet50(weights=None)
             model.load_state_dict(torch.load(weights_path))
             print("Standard ResNet50 Loaded Successfully")
-            if with_transforms:
-                from torchvision.models import ResNet50_Weights
-                transforms = ResNet50_Weights.IMAGENET1K_V2.transforms()
+          
         elif train_mode == 'adv_trained':
             assert torch.cuda.is_available() == True, "Adversarial training is only supported on GPU"
             from robustness import model_utils
@@ -53,7 +51,5 @@ def get_model(arch, dataset='imagenet', train_mode='standard', weights_path=None
         model = vonenet.get_model(model_arch='resnet50', pretrained=True, noise_mode=None)
         print("VOneNet Loaded Successfully")
 
-    if with_transforms:
-        return model, transforms
-    else:
-        return model
+
+    return model
