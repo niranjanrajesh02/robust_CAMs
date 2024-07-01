@@ -2,8 +2,8 @@ import foolbox as fb
 import numpy as np
 
 
-def prepare_attack(model, attack_params):
-    fmodel = fb.PyTorchModel(model, bounds=(0, 1))
+def prepare_attack(model, attack_params, transforms=None):
+    fmodel = fb.PyTorchModel(model, bounds=(0, 1), preprocessing=transforms)
     if attack_params['attack_type'] == 'L2_PGD': 
       eps = attack_params['epsilon']
       step_size = eps / 5

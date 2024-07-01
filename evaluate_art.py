@@ -40,11 +40,11 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
       img_adv, _, _ = attack(model, inputs, labels, epsilons=[eps])
       # Generate adversarial examples
       img_adv = img_adv[0]
-      outputs = model.predict(img_adv)
+      outputs = model(img_adv)
       preds = np.argmax(outputs, axis=1)
 
     else:
-      outputs = model.predict(inputs)
+      outputs = model(inputs)
       preds = np.argmax(outputs, axis=1)
     
     for i in range(len(labels)):
@@ -116,7 +116,7 @@ def main():
   # * Prepare the attack
 
   attack_params = {'attack_type': 'L2_PGD', 'epsilon': args.eps, 'iterations': 7}
-  fmodel, attack = prepare_attack(model, attack_params)
+  fmodel, attack = prepare_attack(model, attack_params, transforms=transform)
   print("Foolbox Model and Attack Prepared with params: ", attack_params)
 
 
