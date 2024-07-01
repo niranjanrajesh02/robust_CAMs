@@ -53,14 +53,15 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
         adv_input = attack.generate(x=inputs, y=labels)
         output = model.predict(adv_input)
         print(adv_input.shape, output.shape)
+        return
      
 
 
-    for i in range(len(labels)):
-        label = labels[i].item()
-        pred = preds[i].item()
-        class_correct[label] += int(pred == label)
-        class_total[label] += 1
+    # for i in range(len(labels)):
+    #     label = labels[i].item()
+    #     pred = preds[i].item()
+    #     class_correct[label] += int(pred == label)
+    #     class_total[label] += 1
 
   classwise_acc = {i: class_correct[i] / class_total[i] if class_total[i] > 0 else 0 for i in range(num_classes)}
 

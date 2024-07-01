@@ -10,8 +10,6 @@
 #SBATCH --cpus-per-task=50
 
 srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_type vone_resnet --dataset imagenet --eps 2
-srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_type vone_resnet --dataset imagenet --eps 3
-srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_type vone_resnet --dataset imagenet --eps 0
 
 
 
