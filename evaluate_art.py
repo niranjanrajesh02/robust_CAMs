@@ -18,30 +18,29 @@ import argparse
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import vonenet
-from art.attacks.evasion import ProjectedGradientDescent
-from art.estimators.classification import PyTorchClassifier
+# from art.attacks.evasion import ProjectedGradientDescent
+# from art.estimators.classification import PyTorchClassifier
 import pickle
 import os
 import numpy as np
 from torchvision.models import resnet50
+from _utils.model import get_model
+from _utils.attacks import prepare_attack
 
-def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000):
+def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=None):
   class_correct = {i: 0 for i in range(num_classes)}
   class_total = {i: 0 for i in range(num_classes)}
 
-  print("Getting Classwise Accuracy ...")
-
+  print("Getting Classwise Accuracy for epsilon: ", eps)
   
   for inputs, labels in tqdm(test_loader):
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
     inputs, labels = inputs.to(device), labels.to(device)
 
     if eps != 0:
-      adv_images = attack.generate(x=inputs)
+      img_adv, _, _ = attack(model, inputs, labels, epsilons=[eps])
       # Generate adversarial examples
-      adv_images_tensor = torch.tensor(adv_images).to(device)
-      outputs = model.predict(adv_images_tensor)
+      img_adv = img_adv[0]
+      outputs = model.predict(img_adv)
       preds = np.argmax(outputs, axis=1)
 
     else:
@@ -67,67 +66,39 @@ def main():
   args = parser.parse_args()
   args.dataset = args.dataset.lower()
 
-  assert args.dataset in ['imagenet'], "Invalid dataset"
+  assert args.dataset in ['imagenet'], "Invalid dataset" 
   assert args.model_type in ['standard', 'adv_trained',  'vone_resnet'], "Invalid model type"
 
   print("\n\n=============================================")
   print(f"Dataset: {args.dataset}, Model Type: {args.model_type}, Epsilon: {args.eps}")
   print("=============================================")
+  
+  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  # device = torch.device("cpu") 
+  print("Device: ", device)
+
   # * Loading the Model
   model_ext = ''
   model = None
-
-  # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-  device = torch.device("cpu")
-  print("Device: ", device)
-
-  model = None
+  
   if args.model_type == 'adv_trained':
     model_ext = '_adv'
     model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
 
-    from robustness import model_utils
-    from robustness.datasets import ImageNet
-    ds = ImageNet('data/imagenet')
-    model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
-    model = model.model.to(device)
-
-    print("Adversarially Trained Resnet Loaded Successfully")
+    model = get_model(arch='resnet50', dataset=args.dataset, train_mode='adv_trained', weights_path=model_path).to(device)
 
   elif args.model_type == 'standard':
-    
     model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
-    model = resnet50(pretrained=False).to(device)
-    model.load_state_dict(torch.load(model_path))
-    print("Standard Resnet Loaded Successfully")
+    model = get_model(arch='resnet50', dataset=args.dataset, train_mode='standard', weights_path=model_path).to(device)
+    
 
   elif args.model_type == 'vone_resnet':
     model_ext = '_vone'
-    if args.dataset == 'imagenet':
-      print("Loading VOneNet Model")
-      model = vonenet.get_model(model_arch='resnet50', pretrained=True, noise_mode=None).to(device)
-      print("VOneNet Loaded Successfully")
-      # model = model.to(device)
-    else:
-      print("VOneNet not available for this dataset")
-      return
-  
-
+    model = get_model(arch='vone_resnet50', dataset=args.dataset, train_mode='standard', weights_path=None).to(device)
+    
   assert model is not None, "Model not loaded successfully"
   model.eval()
   
-  device_str = 'cpu'
-  classifier = PyTorchClassifier(
-        model=model,
-        loss = torch.nn.CrossEntropyLoss(),
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.001),
-        input_shape=(3, 224, 224),
-        nb_classes=1000,
-        clip_values=(0, 1),
-        device_type=device_str
-      )
-
-  print("Model compiled successfully as ART Classifier")
 
   val_loader = None
   #* Loading the dataset
@@ -142,26 +113,24 @@ def main():
     val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=1)
   
-  attack = ProjectedGradientDescent(
-    estimator=classifier,
-    norm=2,
-    eps=args.eps,
-    eps_step=0.01,
-    max_iter=7,
-    targeted=False
-  )
+  # * Prepare the attack
 
-  class_accuracies = get_classwise_acc(classifier, attack, args.eps, val_loader)
+  attack_params = {'attack_type': 'L2_PGD', 'epsilon': args.eps, 'iterations': 7}
+  fmodel, attack = prepare_attack(model, attack_params)
+  print("Foolbox Model and Attack Prepared with params: ", attack_params)
+
+
+  class_accuracies = get_classwise_acc(fmodel, attack, args.eps, val_loader, num_classes=1000, device=device)
+  
   save_path= f'./{args.dataset}_r50{model_ext}_train'
   if not os.path.exists(save_path):
     os.makedirs(save_path)
 
   print("Classwise Accuracies: ", class_accuracies)
-  print(f"Saving Classwise Accuracies to {save_path}")
-
   with open(f'./{save_path}/classwise_acc_e{args.eps}.pkl', 'wb') as f:
     pickle.dump(class_accuracies, f)
 
+  print("Classwise Accuracies saved successfully to ", save_path)
   return
 
 if __name__ == '__main__':

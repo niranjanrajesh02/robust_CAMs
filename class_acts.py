@@ -8,23 +8,11 @@ import os
 import argparse
 import pickle
 from _utils import twoNN
+from _utils.model import get_model
+import torchvision.transforms as transforms
+import torchvision.datasets as datasets
 
-
-
-def load_state_dict_from_url(*args, **kwargs):
-    return torch.hub.load_state_dict_from_url(*args, **kwargs)
-
-# Create a dummy module
-class DummyModule:
-    def __init__(self):
-        self.load_state_dict_from_url = load_state_dict_from_url
-
-# Replace the faulty import
-sys.modules['torchvision.models.utils'] = DummyModule()
-
-
-
-def get_activations(model, input):
+def get_layer_accs(model, input):
   activations = []
   # hook to get input features of a layer 
   def activation_hook(module, input, output):
@@ -32,7 +20,6 @@ def get_activations(model, input):
     activations.append(in_feats)
     return
   
- 
   h1 = None 
   # register hook at the final classification layer (input of final layer == activations of penultimate/representation layer)
   for name, module in model.named_children():
@@ -55,13 +42,46 @@ def get_activations(model, input):
   h1.remove()
 
   activations_arr = np.array(activations[0][0])
-
+  print(activations_arr.shape)
   # reshape to remove batches
   # print("Activations Shape: ",activations_arr.shape)
   # NB, BS, A = activations_arr.shape
   # activations_r = activations_arr.reshape(NB*BS, A)
   
   return activations_arr
+
+def get_activations(model, dl, device, bs=1):    
+  num_classes = 1000
+
+  class_activations = {i: [] for i in range(num_classes)}
+
+  print("Getting Class Activations ...")
+
+  for input, label in tqdm(dl):
+    input, label = input.to(device), label.to(device)
+    # get class index and corresponding activations !
+    if bs == 1:
+      label = label.item()
+      activations = get_layer_accs(model, input)
+      # append to class activations
+      class_activations[label].append(activations)
+    else:
+      # get class index and corresponding activations !
+      labels = label
+      activations = get_layer_accs(model, input)
+      # append to class activations
+      for i in range(len(labels)):
+        label = labels[i].item()
+        class_activations[label].append(activations[i])
+      return #!rem
+
+  print("Class Activations obtained.")
+
+  for key in class_activations:
+    class_activations[key] = np.array(class_activations[key])
+    print(f"Class {key} Activations Shape: ", class_activations[key].shape)
+
+  return class_activations
 
 def estimate_manifold_dim(model_ext, dataset_name='cifar'):
   print("Estimating Manifold Dimension ...")
@@ -101,66 +121,55 @@ def estimate_manifold_dim(model_ext, dataset_name='cifar'):
 def main():
 
   parser = argparse.ArgumentParser(description='Get Class Activations')
-  parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='cifar')
+  parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='imagenet')
+  parser.add_argument('--arch', type=str, help='Model Architecture', default='resnet50')
   parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
   parser.add_argument('--task', type=str, help='Task to perform: acts or dims', default='acts')
 
   args = parser.parse_args()
   args.dataset = args.dataset.lower()
   
-  model_ext = ''
-  if args.model_type == 'adv_trained':
-    model_ext = '_adv'
-  elif args.model_type == 'robust':
-    model_ext = '_robust'
+  assert args.dataset in ['imagenet'], "Invalid dataset" #! only supporting imagenet for now
+  assert args.arch in ['resnet50', 'vone_resnet50'], "Model not supported"
+  assert args.model_type in ['standard', 'adv_trained', 'robust'], "Invalid model type"
+  assert args.task in ['acts', 'dims'], "Invalid task"
+  
+  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-  if args.task == 'acts':
-    from robustness.datasets import CIFAR, ImageNet, RestrictedImageNet
-    from robustness import model_utils
+  if args.dataset == 'imagenet':    
+    if args.task == 'acts':
+      model_ext = ''
+      model = None
+      if args.arch == 'resnet50':
+        if args.model_type == 'standard':
+          model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
+          model = get_model(arch='resnet50', dataset=args.dataset, train_mode='standard', weights_path=model_path)
+        elif args.model_type == 'adv_trained':
+          model_ext = '_adv'
+          model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
+          model = get_model(arch='resnet50', dataset=args.dataset, train_mode='adv_trained', weights_path=model_path)
 
-    if args.dataset == 'cifar':
-      ds = CIFAR('./data')
-    elif args.dataset == 'restricted_imagenet':
-      ds = RestrictedImageNet('./data/imagenet')
-    elif args.dataset == 'imagenet':
-      ds = ImageNet('./data/imagenet')
-    print("Dataset Found. Loading Model ...")
+      if args.arch == 'vone_resnet50':
+        model_ext = '_vone'
+        model = get_model(arch='vone_resnet50', dataset=args.dataset, train_mode='standard', weights_path=None)
+      
+      model = model.to(device)
+      model.eval()
 
-    if args.dataset == 'cifar':
-      model_path = f'./cifar_r50{model_ext}_train/checkpoint.pt.latest'
-    else:
-      model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
-    print("Trying to load model from path: ", model_path)
+      transform = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+      ])
+    
+    val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=1)
+    class_activations = get_activations(model, val_loader, device, bs=32)
 
-    model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
 
     # batch size 1 allows us to get class of each image to sort into class_activations
-    dl = ds.make_loaders(batch_size=1, workers=1, only_val=True)[1]
     
-    num_classes = 10
-    if args.dataset == 'imagenet':
-      num_classes = 1000
-    elif args.dataset == 'restricted_imagenet':
-      num_classes = 9
-
-    class_activations = {i: [] for i in range(num_classes)}
-
-    print("Getting Class Activations ...")
-
-    for input, label in tqdm(dl):
-      input, label = input.cuda(), label.cuda()
-      # get class index and corresponding activations
-      label = label.item()
-      activations = get_activations(model.model, input)
-      # append to class activations
-      class_activations[label].append(activations)
-
-    print("Class Activations obtained.")
-
-    for key in class_activations:
-      class_activations[key] = np.array(class_activations[key])
-      print(f"Class {key} Activations Shape: ", class_activations[key].shape)
-
     print("Saving Class Activations ...") 
     
     save_path= f'./{args.dataset}_r50{model_ext}_train'

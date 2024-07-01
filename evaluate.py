@@ -77,7 +77,7 @@ def main():
   args.dataset = args.dataset.lower()
   
   attack_kwargs = {
-      'constraint': '2',  # l-inf constraint
+      'constraint': '2',  # l2 constraint
       'eps': args.eps,  # epsilon value for l-inf
       'step_size': args.eps/5,  # step size for PGD
       'iterations': 7,  # number of iterations for PGD
