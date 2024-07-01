@@ -33,6 +33,7 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
 
   print("Getting Classwise Accuracy for epsilon: ", eps)
   
+
   for inputs, labels in tqdm(test_loader):
     inputs, labels = inputs.to(device), labels.to(device)
 
@@ -42,7 +43,7 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
       img_adv = img_adv[0]
       outputs = model(img_adv)
       preds = torch.argmax(outputs, dim=1)
-
+      del img_adv
     else:
       outputs = model(inputs)
       preds = torch.argmax(outputs, dim=1)
@@ -115,7 +116,7 @@ def main():
         transforms.ToTensor(),
     ])
     val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=256, shuffle=False, num_workers=1)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=1)
   
   # * Prepare the attack
 
