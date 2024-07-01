@@ -89,8 +89,9 @@ def main():
 
   elif args.model_type == 'standard':
     model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
-    model = get_model(arch='resnet50', dataset=args.dataset, train_mode='standard', weights_path=model_path).to(device)
-    
+    model, preproc = get_model(arch='resnet50', dataset=args.dataset, train_mode='standard', weights_path=model_path, with_transforms=True)
+    model = model.to(device)
+
 
   elif args.model_type == 'vone_resnet':
     model_ext = '_vone'
@@ -103,13 +104,13 @@ def main():
   val_loader = None
   #* Loading the dataset
   if args.dataset == 'imagenet':
-    transform = transforms.Compose([
-      transforms.Resize(256),
-      transforms.CenterCrop(224),
-      transforms.ToTensor(),
-      transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-    
+    # transform = transforms.Compose([
+    #   transforms.Resize(256),
+    #   transforms.CenterCrop(224),
+    #   transforms.ToTensor(),
+    #   transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    # ])
+    transform = preproc
     val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=256, shuffle=False, num_workers=1)
   

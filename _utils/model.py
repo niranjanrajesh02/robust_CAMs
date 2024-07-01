@@ -19,7 +19,7 @@ sys.path.append('../_utils')
 
 from torchvision.models import resnet50
 
-def get_model(arch, dataset='imagenet', train_mode='standard', weights_path=None):
+def get_model(arch, dataset='imagenet', train_mode='standard', weights_path=None, with_transforms=False):
 
     assert arch in ['resnet50', 'vone_resnet'], "Model not supported"
     assert dataset in ['imagenet'], "Dataset not supported"
@@ -27,13 +27,16 @@ def get_model(arch, dataset='imagenet', train_mode='standard', weights_path=None
     if train_mode != 'vone_resnet':
         assert weights_path is not None, "Weights path not provided"
     
+    transforms = None
     if arch == 'resnet50':
         print("Loading ResNet50 Model")
         if train_mode == 'standard':
             model = resnet50(weights=None)
             model.load_state_dict(torch.load(weights_path))
             print("Standard ResNet50 Loaded Successfully")
-
+            if with_transforms:
+                from torchvision.models import ResNet50_Weights
+                transforms = ResNet50_Weights.IMAGENET1K_V2.transforms()
         elif train_mode == 'adv_trained':
             assert torch.cuda.is_available() == True, "Adversarial training is only supported on GPU"
             from robustness import model_utils
@@ -50,5 +53,7 @@ def get_model(arch, dataset='imagenet', train_mode='standard', weights_path=None
         model = vonenet.get_model(model_arch='resnet50', pretrained=True, noise_mode=None)
         print("VOneNet Loaded Successfully")
 
-
-    return model
+    if with_transforms:
+        return model, transforms
+    else:
+        return model

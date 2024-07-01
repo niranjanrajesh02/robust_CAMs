@@ -4,7 +4,7 @@ import numpy as np
 
 def prepare_attack(model, attack_params, transforms=None):
     preprocessing = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], axis=-3)
-    fmodel = fb.PyTorchModel(model, bounds=(0, 1), preprocessing=preprocessing)
+    fmodel = fb.PyTorchModel(model, bounds=(0, 1), preprocessing=transforms)
     if attack_params['attack_type'] == 'L2_PGD': 
       eps = attack_params['epsilon']
       step_size = eps / 5
