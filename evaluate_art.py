@@ -94,7 +94,7 @@ def main():
 
   elif args.model_type == 'vone_resnet':
     model_ext = '_vone'
-    model = get_model(arch='vone_resnet50', dataset=args.dataset, train_mode='standard', weights_path=None).to(device)
+    model = get_model(arch='vone_resnet', dataset=args.dataset, train_mode='standard', weights_path=None).to(device)
     
   assert model is not None, "Model not loaded successfully"
   model.eval()
