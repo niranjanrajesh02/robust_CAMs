@@ -41,11 +41,11 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
       # Generate adversarial examples
       img_adv = img_adv[0]
       outputs = model(img_adv)
-      preds = np.argmax(outputs, axis=1)
+      preds = torch.argmax(outputs, dim=1)
 
     else:
       outputs = model(inputs)
-      preds = np.argmax(outputs, axis=1)
+      preds = torch.argmax(outputs, dim=1)
     
     for i in range(len(labels)):
         label = labels[i].item()
