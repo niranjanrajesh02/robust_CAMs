@@ -52,23 +52,29 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
         labels = labels.detach().cpu().numpy().astype(np.float32)
         adv_input = attack.generate(x=inputs, y=labels)
         output = model.predict(adv_input)
-        print(adv_input.shape, output.shape)
-        print(labels.shape)
+        # print(adv_input.shape, output.shape)
+        # print(labels.shape)
+        preds = np.argmax(output, axis=1)
+      else:
+        inputs = inputs.detach().cpu().numpy().astype(np.float32)
+        labels = labels.detach().cpu().numpy().astype(np.float32)
+        output = model.predict(inputs)
         preds = np.argmax(output, axis=1)
 
-        
-     
+
+
     for i in range(len(labels)):
-        label = labels[i]
-        pred = preds[i]
-        print(label, pred)
+        label = int(labels[i])
+        pred = int(preds[i])
+        # print(label, pred, int(pred == label))
         class_correct[label] += int(pred == label)
         class_total[label] += 1
     
-    return
-
+    
+   
+  
   classwise_acc = {i: class_correct[i] / class_total[i] if class_total[i] > 0 else 0 for i in range(num_classes)}
-
+  print("Classwise Accuracy Calculated Successfully")
   return classwise_acc
 
 
@@ -132,7 +138,7 @@ def main():
         transforms.ToTensor(),
     ])
     val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=1)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=True, num_workers=1)
   
   # * Prepare the attack
 
