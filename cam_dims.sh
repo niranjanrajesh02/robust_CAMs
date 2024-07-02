@@ -8,4 +8,8 @@
 #SBATCH -o cam_out.log
 #SBATCH -e cam_err.log
 #SBATCH --gres=gpu:1
-srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --dataset imagenet --arch resnet --model_type standard --task acts
+
+srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --dataset imagenet --arch resnet --model_type standard --task dims
+
+srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --dataset imagenet --arch resnet --model_type adv_trained --task acts
+srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --dataset imagenet --arch resnet --model_type adv_trained --task acts

@@ -43,10 +43,7 @@ def get_layer_accs(model, input):
 
   activations_arr = np.array(activations[0][0])
   print(activations_arr.shape)
-  # reshape to remove batches
-  # print("Activations Shape: ",activations_arr.shape)
-  # NB, BS, A = activations_arr.shape
-  # activations_r = activations_arr.reshape(NB*BS, A)
+
   
   return activations_arr
 
@@ -61,8 +58,8 @@ def get_activations(model, dl, device, bs=1):
     inputs, labels = inputs.to(device), labels.to(device)
     # get class index and corresponding activations !
     activations = get_layer_accs(model, inputs)
-    print("Activations Shape: ", activations.shape)
-    print("Labels Shape: ", labels.shape)
+    # print("Activations Shape: ", activations.shape)
+    # print("Labels Shape: ", labels.shape)
     # append to class activations
     for i in range(len(labels)):
       label = labels[i].item()
