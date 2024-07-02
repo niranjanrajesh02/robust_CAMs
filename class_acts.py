@@ -87,12 +87,11 @@ def estimate_manifold_dim(model_ext, dataset_name='cifar'):
     return
   
   class_dims = {i : 0 for i in range(10)}
-  for key in class_activations:
+  for key in tqdm(class_activations):
     acts = np.array(class_activations[key])
-    print(f"Estimating manifold dimension for class {key} ...")
-
+    # print(f"Estimating manifold dimension for class {key} ...")
     id, _ = twoNN.estimate_dim(acts)
-    print(f"Estimated manifold dimension for class {key}: ", id)
+    # print(f"Estimated manifold dimension for class {key}: ", id)
     class_dims[key] = id
 
   class_dims['all'] = 0
@@ -100,6 +99,7 @@ def estimate_manifold_dim(model_ext, dataset_name='cifar'):
   all_acts = np.concatenate([class_activations[key] for key in class_activations], axis=0)
   print("Estimating manifold dimension for all classes with concatenated activations: ", all_acts.shape)
   id, _ = twoNN.estimate_dim(all_acts)
+
   print("Estimated manifold dimension for all classes: ", id)
   class_dims['all'] = id
   
