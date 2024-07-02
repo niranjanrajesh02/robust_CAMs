@@ -2,11 +2,10 @@ import numpy as np
 from sklearn import linear_model
 from scipy.stats import pearsonr
 from scipy.spatial.distance import pdist, squareform
+from sklearn.decomposition import PCA
 
-# Code from https://github.com/ansuini/IntrinsicDimDeep/IDNN/intrinsic_dimension.py
-
-def estimate_dim(acts,fraction=1,verbose=False):    
-  
+def estimate_twonn_dim(acts,fraction=1,verbose=False):    
+    # Code from https://github.com/ansuini/IntrinsicDimDeep/IDNN/intrinsic_dimension.py
     X = squareform(pdist(acts, 'euclidean'))
     # print("Distance matrix shape:", X.shape)
     # sort distance matrix
@@ -54,3 +53,11 @@ def estimate_dim(acts,fraction=1,verbose=False):
 
     id = regr.coef_[0][0] # slope of the regression line is ID!
     return id, (x,y, r, pval)
+
+
+def estimate_pca_dim(acts, thresh=0.9):
+    pca = PCA()
+    pca.fit(acts)
+    cumsum = np.cumsum(pca.explained_variance_ratio_)
+    id = np.argmax(cumsum > thresh) + 1
+    return id

@@ -7,7 +7,7 @@ import torch.hub
 import os
 import argparse
 import pickle
-from _utils import twoNN
+from _utils.id_est import estimate_twonn_dim, estimate_pca_dim
 from _utils.model import get_model
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
@@ -74,7 +74,7 @@ def get_activations(model, dl, device, bs=1):
 
   return class_activations
 
-def estimate_manifold_dim(model_ext, dataset_name='cifar'):
+def estimate_manifold_dim(model_ext, dataset_name='imagenet'):
   print("Estimating Manifold Dimension ...")
   class_acts_file = f'./{dataset_name}_r50{model_ext}_train/class_acts_test.pkl'
   print("Class Acts File: ", class_acts_file)
@@ -86,28 +86,37 @@ def estimate_manifold_dim(model_ext, dataset_name='cifar'):
     print("Class Activations File not found.")
     return
   
-  class_dims = {i : 0 for i in range(10)}
+  class_dims_2nn = {i : 0 for i in range(1000)}
+  class_dims_pca = {i : 0 for i in range(1000)}
+
   for key in tqdm(class_activations):
     acts = np.array(class_activations[key])
     # print(f"Estimating manifold dimension for class {key} ...")
-    id, _ = twoNN.estimate_dim(acts)
-    # print(f"Estimated manifold dimension for class {key}: ", id)
-    class_dims[key] = id
+    id_2nn, _ = estimate_twonn_dim(acts)
+    id_pca = estimate_pca_dim(acts)
 
-  class_dims['all'] = 0
-  # concatenate all class activations
-  all_acts = [class_activations[key] for key in class_activations]
-  all_acts = np.concatenate(all_acts, axis=0)
-  print("Estimating manifold dimension for all classes with concatenated activations: ", all_acts.shape)
-  id, _ = twoNN.estimate_dim(all_acts)
-
-  print("Estimated manifold dimension for all classes: ", id)
-  class_dims['all'] = id
+    class_dims_2nn[key] = id_2nn
+    class_dims_pca[key] = id_pca
   
-  print("Classwise Estimated Manifold Dimensions: ", class_dims)
 
-  with open(f'./{dataset_name}_r50{model_ext}_train/class_dims_test.pkl', 'wb') as f:
-    pickle.dump(class_dims, f)
+  with open(f'./{dataset_name}_r50{model_ext}_train/class_dims_2nn_test.pkl', 'wb') as f:
+    pickle.dump(class_dims_2nn, f)
+
+  with open(f'./{dataset_name}_r50{model_ext}_train/class_dims_pca_test.pkl', 'wb') as f:
+    pickle.dump(class_dims_pca, f)
+
+
+
+  # class_dims['all'] = 0
+  # # concatenate all class activations
+  # all_acts = [class_activations[key] for key in class_activations]
+  # all_acts = np.concatenate(all_acts, axis=0)
+  # print("Estimating manifold dimension for all classes with concatenated activations: ", all_acts.shape)
+  # id, _ = id_est.estimate_dim(all_acts)
+
+  # print("Estimated manifold dimension for all classes: ", id)
+  # class_dims['all'] = id
+  
 
   return
 
