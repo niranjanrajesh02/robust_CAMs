@@ -10,7 +10,7 @@
 #SBATCH --gres=gpu:1
 
 
-srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_type adv_trained --dataset imagenet --eps 0
+srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_type standard --dataset imagenet --eps 0
 
 
 

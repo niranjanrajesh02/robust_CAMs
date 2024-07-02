@@ -155,10 +155,10 @@ def main():
     os.makedirs(save_path)
 
   print("Classwise Accuracies: ", class_accuracies)
-  with open(f'./{save_path}/classwise_acc_e{args.eps}.pkl', 'wb') as f:
-    pickle.dump(class_accuracies, f)
+  # with open(f'./{save_path}/classwise_acc_e{args.eps}.pkl', 'wb') as f:
+  #   pickle.dump(class_accuracies, f)
 
-  print("Classwise Accuracies saved successfully to ", save_path)
+  # print("Classwise Accuracies saved successfully to ", save_path)
   return
 
 if __name__ == '__main__':
