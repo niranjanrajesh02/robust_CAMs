@@ -96,7 +96,8 @@ def estimate_manifold_dim(model_ext, dataset_name='cifar'):
 
   class_dims['all'] = 0
   # concatenate all class activations
-  all_acts = np.concatenate([class_activations[key] for key in class_activations], axis=0)
+  all_acts = [class_activations[key] for key in class_activations]
+  all_acts = np.concatenate(all_acts, axis=0)
   print("Estimating manifold dimension for all classes with concatenated activations: ", all_acts.shape)
   id, _ = twoNN.estimate_dim(all_acts)
 
@@ -105,7 +106,7 @@ def estimate_manifold_dim(model_ext, dataset_name='cifar'):
   
   print("Classwise Estimated Manifold Dimensions: ", class_dims)
 
-  with open(f'./{dataset_name}_{model_ext}_train/class_dims_test.pkl', 'wb') as f:
+  with open(f'./{dataset_name}_r50{model_ext}_train/class_dims_test.pkl', 'wb') as f:
     pickle.dump(class_dims, f)
 
   return
