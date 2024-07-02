@@ -68,8 +68,6 @@ def get_activations(model, dl, device, bs=1):
       label = labels[i].item()
       class_activations[label].append(activations[i])
 
-    return #!rem
-
   print("Class Activations obtained.")
 
   for key in class_activations:

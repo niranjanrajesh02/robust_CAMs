@@ -3,7 +3,7 @@
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --mem 20G
-#SBATCH -t 1-23:59 # time (D-HH:MM)
+#SBATCH -t 0-23:59 # time (D-HH:MM)
 #SBATCH --job-name="robCAM_acts"
 #SBATCH -o cam_out.log
 #SBATCH -e cam_err.log
