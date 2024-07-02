@@ -1,13 +1,13 @@
 #!/bin/bash
-#SBATCH -p gpu_a100_8
+#SBATCH -p bigcompute
 #SBATCH -N 1
 #SBATCH -n 1
-#SBATCH --mem 20G
+#SBATCH --mem 100G
 #SBATCH -t 0-23:59 # time (D-HH:MM)
 #SBATCH --job-name="robCAM_acts"
 #SBATCH -o cam_out.log
 #SBATCH -e cam_err.log
-#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=100
 
 
 srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --dataset imagenet --arch resnet --model_type standard --task dims
