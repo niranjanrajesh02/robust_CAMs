@@ -35,9 +35,8 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
   for inputs, labels in tqdm(test_loader):
     
     if model_type != 'vone_resnet': # Foolbox Model
-
+      inputs, labels = inputs.to(device), labels.to(device)
       if eps != 0:
-        inputs, labels = inputs.to(device), labels.to(device)
         img_adv, _, _ = attack(model, inputs, labels, epsilons=[eps])
         # Generate adversarial examples
         img_adv = img_adv[0]
