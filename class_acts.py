@@ -155,26 +155,28 @@ def main():
         transforms.ToTensor(),
         # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
       ])
+      
+      val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
+      val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=1)
+      class_activations = get_activations(model, val_loader, device, bs=32)
     
-    val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=1)
-    class_activations = get_activations(model, val_loader, device, bs=32)
+      print("Saving Class Activations ...") 
+      
+      save_path= f'./{args.dataset}_r50{model_ext}_train'
+      if not os.path.exists(save_path):
+        os.makedirs(save_path)
 
+      with open(f'{save_path}/class_acts_test.pkl', 'wb') as f:
+        pickle.dump(class_activations, f)
+      return
 
-    
-    print("Saving Class Activations ...") 
-    
-    save_path= f'./{args.dataset}_r50{model_ext}_train'
-    if not os.path.exists(save_path):
-      os.makedirs(save_path)
+    elif args.task == 'dims':
+      model_ext = ''
+      if args.model_type == 'adv_trained': model_ext = '_adv'
+      elif args.model_type == 'vone_resnet': model_ext = '_vone'
 
-    with open(f'{save_path}/class_acts_test.pkl', 'wb') as f:
-      pickle.dump(class_activations, f)
-    return
-
-  elif args.task == 'dims':
-    estimate_manifold_dim(model_ext, dataset_name=args.dataset)
-    return
+      estimate_manifold_dim(model_ext, dataset_name=args.dataset)
+      return
 
 
 if __name__ == '__main__':
