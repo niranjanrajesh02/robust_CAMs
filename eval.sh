@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p gpu_a100_2
+#SBATCH -p gpu_a100_8
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --mem 20G

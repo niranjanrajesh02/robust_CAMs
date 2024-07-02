@@ -133,6 +133,7 @@ def main():
         transforms.Resize(256),
         transforms.CenterCrop(224),
         transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=True, num_workers=1)
@@ -144,7 +145,7 @@ def main():
     fmodel, attack = prepare_art_attack(model, attack_params)
     print("ART Model and Attack Prepared with params: ", attack_params)
   else:
-    fmodel, attack = prepare_attack(model, attack_params, transforms=transform)
+    fmodel, attack = prepare_attack(model, attack_params)
     print("Foolbox Model and Attack Prepared with params: ", attack_params)
 
 

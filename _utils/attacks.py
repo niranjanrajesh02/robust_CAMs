@@ -7,7 +7,7 @@ import torch.optim as optim
 
 def prepare_attack(model, attack_params):
     preprocessing = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], axis=-3)
-    fmodel = fb.PyTorchModel(model, bounds=(0, 1), preprocessing=None)
+    fmodel = fb.PyTorchModel(model, bounds=(0, 1), preprocessing=preprocessing)
     if attack_params['attack_type'] == 'L2_PGD': 
       eps = attack_params['epsilon']
       step_size = eps / 5
