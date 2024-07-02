@@ -57,23 +57,18 @@ def get_activations(model, dl, device, bs=1):
 
   print("Getting Class Activations ...")
 
-  for input, label in tqdm(dl):
-    input, label = input.to(device), label.to(device)
+  for inputs, labels in tqdm(dl):
+    inputs, labels = inputs.to(device), labels.to(device)
     # get class index and corresponding activations !
-    if bs == 1:
-      label = label.item()
-      activations = get_layer_accs(model, input)
-      # append to class activations
-      class_activations[label].append(activations)
-    else:
-      # get class index and corresponding activations !
-      labels = label
-      activations = get_layer_accs(model, input)
-      # append to class activations
-      for i in range(len(labels)):
-        label = labels[i].item()
-        class_activations[label].append(activations[i])
-      return #!rem
+    activations = get_layer_accs(model, inputs)
+    print("Activations Shape: ", activations.shape)
+    print("Labels Shape: ", labels.shape)
+    # append to class activations
+    for i in range(len(labels)):
+      label = labels[i].item()
+      class_activations[label].append(activations[i])
+
+    return #!rem
 
   print("Class Activations obtained.")
 
@@ -122,7 +117,7 @@ def main():
 
   parser = argparse.ArgumentParser(description='Get Class Activations')
   parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='imagenet')
-  parser.add_argument('--arch', type=str, help='Model Architecture', default='resnet50')
+  parser.add_argument('--arch', type=str, help='Model Architecture', default='resnet')
   parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
   parser.add_argument('--task', type=str, help='Task to perform: acts or dims', default='acts')
 
@@ -130,7 +125,7 @@ def main():
   args.dataset = args.dataset.lower()
   
   assert args.dataset in ['imagenet'], "Invalid dataset" #! only supporting imagenet for now
-  assert args.arch in ['resnet50', 'vone_resnet50'], "Model not supported"
+  assert args.arch in ['resnet', 'vone_resnet'], "Model not supported"
   assert args.model_type in ['standard', 'adv_trained', 'robust'], "Invalid model type"
   assert args.task in ['acts', 'dims'], "Invalid task"
   
@@ -140,27 +135,30 @@ def main():
     if args.task == 'acts':
       model_ext = ''
       model = None
-      if args.arch == 'resnet50':
+      if args.arch == 'resnet':
         if args.model_type == 'standard':
           model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
-          model = get_model(arch='resnet50', dataset=args.dataset, train_mode='standard', weights_path=model_path)
+          model = get_model(arch='resnet', dataset=args.dataset, train_mode='standard', weights_path=model_path).to(device)
+          model = model.to(device)
+
         elif args.model_type == 'adv_trained':
           model_ext = '_adv'
-          model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
-          model = get_model(arch='resnet50', dataset=args.dataset, train_mode='adv_trained', weights_path=model_path)
+          model_path = f'./models/resnet50_l2_eps3.pt'
+          model = get_model(arch='resnet', dataset=args.dataset, train_mode='adv_trained', weights_path=model_path).to(device)
+          model = model.to(device)
+
 
       if args.arch == 'vone_resnet50':
-        model_ext = '_vone'
-        model = get_model(arch='vone_resnet50', dataset=args.dataset, train_mode='standard', weights_path=None)
+       model_ext = '_vone'
+       model = get_model(arch='vone_resnet', dataset=args.dataset, train_mode='standard', weights_path=None).to(device)
       
-      model = model.to(device)
       model.eval()
 
       transform = transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
       ])
     
     val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
@@ -168,7 +166,6 @@ def main():
     class_activations = get_activations(model, val_loader, device, bs=32)
 
 
-    # batch size 1 allows us to get class of each image to sort into class_activations
     
     print("Saving Class Activations ...") 
     

@@ -108,12 +108,10 @@ def main():
   if args.model_type == 'adv_trained':
     model_ext = '_adv'
     model_path = f'./models/resnet50_l2_eps3.pt'
-    model = get_model(arch='resnet50', dataset=args.dataset, train_mode='adv_trained', weights_path=model_path).to(device)
+    model = get_model(arch='resnet50', dataset=args.dataset, train_mode='adv_trained', weights_path=model_path)
     model = model.to(device)
 
   elif args.model_type == 'standard':
-    from torchvision.models import ResNet50_Weights
-    # preproc = ResNet50_Weights.IMAGENET1K_V2.transforms()
     model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
     model = get_model(arch='resnet50', dataset=args.dataset, train_mode='standard', weights_path=model_path)
     model = model.to(device)

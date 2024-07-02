@@ -21,14 +21,14 @@ from torchvision.models import resnet50
 
 def get_model(arch, dataset='imagenet', train_mode='standard', weights_path=None, with_transforms=False):
 
-    assert arch in ['resnet50', 'vone_resnet'], "Model not supported"
+    assert arch in ['resnet', 'vone_resnet'], "Model not supported"
     assert dataset in ['imagenet'], "Dataset not supported"
     assert train_mode in ['standard', 'adv_trained'], "Training mode not supported"
     if arch != 'vone_resnet':
         assert weights_path is not None, "Weights path not provided"
     
     transforms = None
-    if arch == 'resnet50':
+    if arch == 'resnet':
         print("Loading ResNet50 Model")
         if train_mode == 'standard':
             model = resnet50(weights=None)
