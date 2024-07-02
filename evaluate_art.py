@@ -37,6 +37,7 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
     if model_type != 'vone_resnet': # Foolbox Model
 
       if eps != 0:
+        inputs, labels = inputs.to(device), labels.to(device)
         img_adv, _, _ = attack(model, inputs, labels, epsilons=[eps])
         # Generate adversarial examples
         img_adv = img_adv[0]
@@ -109,7 +110,8 @@ def main():
     model_ext = '_adv'
     model_path = f'./models/resnet50_l2_eps3.pt'
     model = get_model(arch='resnet50', dataset=args.dataset, train_mode='adv_trained', weights_path=model_path).to(device)
-  
+    model = model.to(device)
+
   elif args.model_type == 'standard':
     from torchvision.models import ResNet50_Weights
     # preproc = ResNet50_Weights.IMAGENET1K_V2.transforms()
@@ -133,7 +135,7 @@ def main():
         transforms.Resize(256),
         transforms.CenterCrop(224),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=True, num_workers=1)
