@@ -36,10 +36,19 @@ def get_model(arch, dataset='imagenet', train_mode='standard', weights_path=None
             print("Standard ResNet50 Loaded Successfully")
           
         elif train_mode == 'adv_trained':
-            assert torch.cuda.is_available() == True, "Adversarial training is only supported on GPU"
+            model = resnet50(weights="DEFAULT")
+            weights = torch.load(weights_path )
+            all_w = [w for w in weights['model']]
+            state_dict = weights['model']
+            for w in all_w:
+                wt = state_dict.pop(w)
+                if w.startswith("module.attacker.model."):
+                    state_dict[w[22:]] = wt
+            model.load_state_dict(state_dict)
             from robustness import model_utils
             from robustness.datasets import ImageNet
             ds = ImageNet('')
+            # from robustness
             model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=weights_path)
             model = model.model
             print("Adversarially Trained ResNet50 Loaded Successfully")
