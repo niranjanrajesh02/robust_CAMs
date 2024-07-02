@@ -105,7 +105,7 @@ def estimate_manifold_dim(model_ext, dataset_name='imagenet'):
   with open(f'./{dataset_name}_r50{model_ext}_train/class_dims_pca_test.pkl', 'wb') as f:
     pickle.dump(class_dims_pca, f)
 
-
+  print("Manifold Dimensions Saved Successfully.")
 
   # class_dims['all'] = 0
   # # concatenate all class activations
