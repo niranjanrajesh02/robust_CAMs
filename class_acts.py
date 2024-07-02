@@ -40,9 +40,10 @@ def get_layer_accs(model, input):
   _ = model(input) # forward pass, activations are stored by the hook
 
   h1.remove()
-
+  acts = np.array(activations)
+  print("Activations shape in func:", acts.shape)
   activations_arr = np.array(activations[0][0])
-  print(activations_arr.shape)
+  # print(activations_arr.shape)
 
   
   return activations_arr
@@ -58,18 +59,20 @@ def get_activations(model, dl, device, bs=1):
     inputs, labels = inputs.to(device), labels.to(device)
     # get class index and corresponding activations !
     activations = get_layer_accs(model, inputs)
-    # print("Activations Shape: ", activations.shape)
+    print("Activations Shape: ", activations.shape)
     # print("Labels Shape: ", labels.shape)
     # append to class activations
     for i in range(len(labels)):
       label = labels[i].item()
       class_activations[label].append(activations[i])
+    
+    return
 
   print("Class Activations obtained.")
 
   for key in class_activations:
     class_activations[key] = np.array(class_activations[key])
-    print(f"Class {key} Activations Shape: ", class_activations[key].shape)
+    # print(f"Class {key} Activations Shape: ", class_activations[key].shape)
 
   return class_activations
 
@@ -89,6 +92,7 @@ def estimate_manifold_dim(model_ext, dataset_name='cifar'):
   for key in class_activations:
     acts = np.array(class_activations[key])
     print(f"Estimating manifold dimension for class {key} ...")
+
     id, _ = twoNN.estimate_dim(acts)
     print(f"Estimated manifold dimension for class {key}: ", id)
     class_dims[key] = id
