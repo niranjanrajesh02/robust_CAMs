@@ -102,14 +102,7 @@ def estimate_manifold_dim(model_ext, dataset_name='imagenet'):
     class_dims_pca[key] = id_pca
   
 
-  with open(f'./{dataset_name}_r50{model_ext}_train/class_dims_2nn_test.pkl', 'wb') as f:
-    pickle.dump(class_dims_2nn, f)
-
-  with open(f'./{dataset_name}_r50{model_ext}_train/class_dims_pca_test.pkl', 'wb') as f:
-    pickle.dump(class_dims_pca, f)
-
-  print("Manifold Dimensions Saved Successfully.")
-
+ 
   # class_dims['all'] = 0
   # # concatenate all class activations
   # all_acts = [class_activations[key] for key in class_activations]
@@ -121,7 +114,7 @@ def estimate_manifold_dim(model_ext, dataset_name='imagenet'):
   # class_dims['all'] = id
   
 
-  return
+  return class_dims_2nn, class_dims_pca
 
 def main():
 
@@ -176,7 +169,7 @@ def main():
       if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-      with open(f'{save_path}/class_acts_test.pkl', 'wb') as f:
+      with open(f'{save_path}/class_acts_{args.split}.pkl', 'wb') as f:
         pickle.dump(class_activations, f)
       return
 
@@ -185,7 +178,16 @@ def main():
       if args.model_type == 'adv_trained': model_ext = '_adv'
       elif args.model_type == 'vone_resnet': model_ext = '_vone'
 
-      estimate_manifold_dim(model_ext, dataset_name=args.dataset)
+      class_dims_2nn, class_dims_pca =  estimate_manifold_dim(model_ext, dataset_name=args.dataset)
+
+      with open(f'./{args.dataset}_r50{model_ext}_train/class_dims_2nn_{args.split}.pkl', 'wb') as f:
+        pickle.dump(class_dims_2nn, f)
+
+      with open(f'./{args.dataset}_r50{model_ext}_train/class_dims_pca_{args.split}.pkl', 'wb') as f:
+        pickle.dump(class_dims_pca, f)
+
+      print("Manifold Dimensions Saved Successfully.")
+
       return
 
 
