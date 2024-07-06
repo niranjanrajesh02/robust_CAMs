@@ -143,13 +143,13 @@ def main():
       if args.arch == 'resnet':
         if args.model_type == 'standard':
           model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
-          model = get_model(arch='resnet', dataset=args.dataset, train_mode='standard', weights_path=model_path).to(device)
+          model = get_model(arch='resnet50', dataset=args.dataset, train_mode='standard').to(device)
           model = model.to(device)
 
         elif args.model_type == 'adv_trained':
           model_ext = '_adv'
           model_path = f'./models/resnet50_l2_eps3.pt'
-          model = get_model(arch='resnet', dataset=args.dataset, train_mode='adv_trained', weights_path=model_path).to(device)
+          model = get_model(arch='resnet50', dataset=args.dataset, train_mode='adv_trained').to(device)
           model = model.to(device)
 
 
