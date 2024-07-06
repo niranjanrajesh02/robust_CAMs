@@ -77,7 +77,7 @@ def get_activations(model, dl, device, bs=1):
 
   return class_activations
 
-def estimate_manifold_dim(model_ext, dataset_name='imagenet', data_split='test'):
+def estimate_manifold_dim(model_ext, dataset_name='imagenet', data_split='val'):
   print("Estimating Manifold Dimension ...")
   class_acts_file = f'./{dataset_name}_r50{model_ext}_train/class_acts_{data_split}.pkl'
   print("Class Acts File: ", class_acts_file)
@@ -178,7 +178,7 @@ def main():
       if args.model_type == 'adv_trained': model_ext = '_adv'
       elif args.model_type == 'vone_resnet': model_ext = '_vone'
 
-      class_dims_2nn, class_dims_pca =  estimate_manifold_dim(model_ext, dataset_name=args.dataset)
+      class_dims_2nn, class_dims_pca =  estimate_manifold_dim(model_ext, dataset_name=args.dataset, data_split=args.data_split)
 
       with open(f'./{args.dataset}_r50{model_ext}_train/class_dims_2nn_{args.data_split}.pkl', 'wb') as f:
         pickle.dump(class_dims_2nn, f)
