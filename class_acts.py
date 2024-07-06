@@ -9,8 +9,10 @@ import argparse
 import pickle
 from _utils.id_est import estimate_twonn_dim, estimate_pca_dim
 from _utils.model import get_model
+from _utils.data import get_dataloader
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+
 
 def get_layer_accs(model, input):
   activations = []
@@ -60,6 +62,7 @@ def get_activations(model, dl, device, bs=1):
     # print("Labels Shape: ", labels.shape)
     # append to class activations
 
+    # iterate through batch
     for i in range(len(labels)):
       label = labels[i].item()
       class_activations[label].append(activations[i])
@@ -127,14 +130,16 @@ def main():
   parser.add_argument('--arch', type=str, help='Model Architecture', default='resnet')
   parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
   parser.add_argument('--task', type=str, help='Task to perform: acts or dims', default='acts')
+  parser.add_argument('--data_split', type=str, help='Data split to use: train or val', default='val')
 
   args = parser.parse_args()
   args.dataset = args.dataset.lower()
   
-  assert args.dataset in ['imagenet'], "Invalid dataset" #! only supporting imagenet for now
+  assert args.dataset in ['imagenet'], "Invalid dataset" 
   assert args.arch in ['resnet', 'vone_resnet'], "Model not supported"
   assert args.model_type in ['standard', 'adv_trained', 'robust'], "Invalid model type"
   assert args.task in ['acts', 'dims'], "Invalid task"
+  assert args.data_split in ['train', 'val'], "Invalid data split"
   
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -161,16 +166,9 @@ def main():
       
       model.eval()
 
-      transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-      ])
-      
-      val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
-      val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=1)
-      class_activations = get_activations(model, val_loader, device, bs=32)
+      batch_size = 32
+      dl = get_dataloader(ds_name=args.dataset, split=args.data_split, bs=batch_size)
+      class_activations = get_activations(model, dl, device, bs=batch_size)
     
       print("Saving Class Activations ...") 
       

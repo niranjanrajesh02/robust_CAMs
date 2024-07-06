@@ -7,139 +7,147 @@ def load_state_dict_from_url(*args, **kwargs):
 class DummyModule:
     def __init__(self):
         self.load_state_dict_from_url = load_state_dict_from_url
-
-# Replace the faulty import
 sys.modules['torchvision.models.utils'] = DummyModule()
 
-from robustness import model_utils, datasets, train, defaults
-from robustness.datasets import CIFAR, RestrictedImageNet, ImageNet
-import os
-import argparse
+
+import sys
 import torch
-import cox.store
 import pickle
 from tqdm import tqdm
+import argparse
+import torchvision.datasets as datasets
+import torchvision.transforms as transforms
+import pickle
+import os
+import numpy as np
+from torchvision.models import resnet50
+from _utils.model import get_model, model_shorthands
+from _utils.attacks import prepare_attack, prepare_art_attack
 
-def get_classwise_acc(m, test_loader, attack_kwargs, eps, ds_name='cifar'):
-  if eps == 0:
-    print("No attack being performed")
-  else:
-    print(f"Attack being performed with Epsilon: {eps}")
-  
-  num_classes = 10
-  if ds_name == 'imagenet':
-    num_classes = 1000
-  elif ds_name == 'restricted_imagenet':
-    num_classes = 9
-  
+def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=None, model_type='standard'):
   class_correct = {i: 0 for i in range(num_classes)}
   class_total = {i: 0 for i in range(num_classes)}
 
-  # for param in m.model.parameters():
-  #   param.requires_grad = False
-
-  print("Getting Classwise Accuracy ...")
+  print("Getting Classwise Accuracy for epsilon: ", eps)
 
   for inputs, labels in tqdm(test_loader):
-    inputs, labels = inputs.cuda(), labels.cuda()
+    
+    if model_type != 'vone_resnet': # Foolbox Model
+      inputs, labels = inputs.to(device), labels.to(device)
+      if eps != 0:
+        img_adv, _, _ = attack(model, inputs, labels, epsilons=[eps])
+        # Generate adversarial examples
+        img_adv = img_adv[0]
+        outputs = model(img_adv)
+        preds = torch.argmax(outputs, dim=1)
+      
+      else:
+        outputs = model(inputs)
+        preds = torch.argmax(outputs, dim=1)
+      
+    else: # ART Model
+      if eps != 0:
+        inputs = inputs.detach().cpu().numpy().astype(np.float32)
+        labels = labels.detach().cpu().numpy().astype(np.float32)
+        adv_input = attack.generate(x=inputs, y=labels)
+        output = model.predict(adv_input)
+        # print(adv_input.shape, output.shape)
+        # print(labels.shape)
+        preds = np.argmax(output, axis=1)
+      else:
+        inputs = inputs.detach().cpu().numpy().astype(np.float32)
+        labels = labels.detach().cpu().numpy().astype(np.float32)
+        output = model.predict(inputs)
+        preds = np.argmax(output, axis=1)
 
-    # Generate adversarial examples
-    if eps != 0:
-      torch.autograd.set_detect_anomaly(True)
-      _, adv_in = m(inputs, labels, make_adv=True, **attack_kwargs)
-      out, _ = m(adv_in)
-      preds = torch.argmax(out, dim=1)
 
-    else:
-      out, _ = m(inputs, labels, make_adv=False)
-      preds = torch.argmax(out, dim=1)
-  
-    # Update classwise accuracy for the batch
+
     for i in range(len(labels)):
-      label = labels[i].item()
-      pred = preds[i].item()
-      class_correct[label] += int(pred == label)
-      class_total[label] += 1
-
-  # Calculate classwise accuracy
+        label = int(labels[i])
+        pred = int(preds[i])
+        # print(label, pred, int(pred == label))
+        class_correct[label] += int(pred == label)
+        class_total[label] += 1
+  
   classwise_acc = {i: class_correct[i] / class_total[i] if class_total[i] > 0 else 0 for i in range(num_classes)}
-
+  print("Classwise Accuracy Calculated Successfully")
   return classwise_acc
 
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
+  parser.add_argument('--model_name', type=str, help='Name of the model to evaluate', default='resnet50')
+  parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained', default='standard')
   parser.add_argument('--eps', type=float, help='Epsilon value for adversarial training', default=0)
-  parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='cifar')
+  parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='imagenet')
   args = parser.parse_args()
-  
   args.dataset = args.dataset.lower()
+
+  assert args.dataset in ['imagenet'], "Invalid dataset" 
+  assert args.model_type in ['standard', 'adv_trained'], "Invalid model type"
+  assert args.eps >= 0, "Invalid epsilon value"
+  assert args.model_name in ['resnet18', 'resnet50', 'densenet161', 'vgg16_bn', 'wide_resnet50_2'], "Model not supported"
   
-  attack_kwargs = {
-      'constraint': '2',  # l2 constraint
-      'eps': args.eps,  # epsilon value for l-inf
-      'step_size': args.eps/5,  # step size for PGD
-      'iterations': 7,  # number of iterations for PGD
-      'do_tqdm': False
-  }
-
-  assert args.dataset in ['cifar', 'restricted_imagenet', 'imagenet'], "Invalid dataset"
-  assert args.model_type in ['standard', 'adv_trained', 'robust', 'vone_resnet'], "Invalid model type"
-
   print("\n\n=============================================")
   print(f"Dataset: {args.dataset}, Model Type: {args.model_type}, Epsilon: {args.eps}")
   print("=============================================")
+
+  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  print("Device: ", device)
+
+  # * Loading the Model
   model_ext = ''
+  model = None
+  model_short =  model_shorthands[args.model_name]
+
   if args.model_type == 'adv_trained':
-    model_ext = '_adv'
-  elif args.model_type == 'robust':
-    model_ext = '_robust'
-  elif args.model_type == 'vone_resnet':
-    model_ext = '_vone_resnet'
+    model_ext = f'{model_short}_adv'
+    model = get_model(arch='resnet', dataset=args.dataset, train_mode='adv_trained', weights_path=model_path)
+    model = model.to(device)
+
+  elif args.model_type == 'standard':
+    model_ext = f'{model_short}'
+    model = get_model(arch='resnet', dataset=args.dataset, train_mode='standard', weights_path=model_path)
+    model = model.to(device)
 
 
-  if args.dataset == 'cifar':
-    ds = CIFAR('./data')
-  elif args.dataset == 'restricted_imagenet':
-    ds = RestrictedImageNet('./data/imagenet')
-  elif args.dataset == 'imagenet':
-    ds = ImageNet('./data/imagenet')
-  print("Dataset Found. Loading Model ...")
-
-  if args.model_type == 'vone_resnet' and args.dataset == 'imagenet':
-    import vonenet
-    print("Loading VOneNet Model")
-    v1_model = vonenet.get_model(model_arch='resnet50', pretrained=True)
-    print("VOneNet Model Loaded Successfully from Vonenet, now loading into Robustness Library")
-    model, _ = model_utils.make_and_restore_model(arch=v1_model.module, dataset=ds, add_custom_forward=True)
-    print("Model Loaded Successfully")
-  elif args.model_type != 'vone_resnet':
-    if args.dataset  == 'cifar':
-      model_path = f'./cifar_r50{model_ext}_train/checkpoint.pt.latest'
-    else:
-      model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
-    
-    model, _ = model_utils.make_and_restore_model(arch='resnet50', dataset=ds, resume_path=model_path)
-    print("Model Loaded Successfully")
-    
-  test_loader = ds.make_loaders(batch_size=256, workers=1, only_val=True)[1]
-  print("Test Loader Created")
-
+  assert model is not None, "Model not loaded successfully"
   model.eval()
-  classwise_acc = get_classwise_acc(model, test_loader, attack_kwargs, args.eps, ds_name=args.dataset)
-  print("Classwise Accuracy: ", classwise_acc)
+  val_loader = None
+  
+  #* Loading the dataset
+  if args.dataset == 'imagenet':
+    transform = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+    val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=True, num_workers=1)
+  
+  # * Prepare the attack
 
-  # store classwise accuracy as a pickle file
+  attack_params = {'attack_type': 'L2_PGD', 'epsilon': args.eps, 'iterations': 7}
+  if args.model_type == 'vone_resnet':
+    fmodel, attack = prepare_art_attack(model, attack_params)
+    print("ART Model and Attack Prepared with params: ", attack_params)
+  else:
+    fmodel, attack = prepare_attack(model, attack_params)
+    print("Foolbox Model and Attack Prepared with params: ", attack_params)
+
+
+  class_accuracies = get_classwise_acc(fmodel, attack, args.eps, val_loader, num_classes=1000, device=device, model_type=args.model_type)
+  
   save_path= f'./{args.dataset}_r50{model_ext}_train'
   if not os.path.exists(save_path):
     os.makedirs(save_path)
 
-  with open(f'{save_path}/classwise_acc_e{args.eps}.pkl', 'wb') as f:
-    pickle.dump(classwise_acc, f)
-  
-  print(f"Classwise Accuracy stored as pickle file for model type: {args.model_type} and dataset: {args.dataset} with epsilon: {args.eps}")
+  print("Classwise Accuracies: ", class_accuracies)
+  # with open(f'./{save_path}/classwise_acc_e{args.eps}.pkl', 'wb') as f:
+  #   pickle.dump(class_accuracies, f)
 
+  # print("Classwise Accuracies saved successfully to ", save_path)
   return
 
 if __name__ == '__main__':
