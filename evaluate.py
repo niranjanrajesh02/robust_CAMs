@@ -20,9 +20,9 @@ import torchvision.transforms as transforms
 import pickle
 import os
 import numpy as np
-from torchvision.models import resnet50
 from _utils.model import get_model, model_shorthands
-from _utils.attacks import prepare_attack, prepare_art_attack
+from _utils.attacks import prepare_attack
+from _utils.data import get_dataloader
 
 def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=None, model_type='standard'):
   class_correct = {i: 0 for i in range(num_classes)}
@@ -103,14 +103,7 @@ def main():
   #* Loading the dataset
   val_loader = None
   if args.dataset == 'imagenet':
-    transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-    val_dataset = datasets.ImageFolder(root='./data/imagenet/val', transform=transform)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=True, num_workers=1)
+    val_loader = get_dataloader(ds_name='imagenet', split='val', bs=32)
   
   # * Prepare the attack
   attack_params = None
