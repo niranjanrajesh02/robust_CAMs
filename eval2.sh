@@ -9,9 +9,11 @@
 #SBATCH -e ev2_err.log
 #SBATCH --cpus-per-task=50
 
-srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_type vone_resnet --dataset imagenet --eps 2
-srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_type vone_resnet --dataset imagenet --eps 3
-srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_type vone_resnet --dataset imagenet --eps 0
+
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_arch resnet18 --model_type standard 
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_arch resnet18 --model_type standard --adv_evaluate True --l_constraint l2
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_arch resnet18 --model_type standard --adv_evaluate True --l_constraint linf 
+
 
 
 

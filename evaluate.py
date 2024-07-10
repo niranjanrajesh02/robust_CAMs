@@ -40,10 +40,10 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
       # print(labels.shape)
       preds = np.argmax(output, axis=1)
     else: # Standard Evaluation
-      inputs = inputs.detach().cpu().numpy().astype(np.float32)
-      labels = labels.detach().cpu().numpy().astype(np.float32)
-      output = model.predict(inputs)
-      preds = np.argmax(output, axis=1)
+      # inputs = inputs.detach().cpu().numpy().astype(np.float32)
+      # labels = labels.detach().cpu().numpy().astype(np.float32)
+      output = model(inputs)
+      preds = np.argmax(output.detach(), axis=1)
 
     # classwise accuracy calculation
     for i in range(len(labels)):
