@@ -54,7 +54,7 @@ def get_activations(model, dl, device, bs=1):
 
   print("Getting Class Activations ...")
 
-  batches = 0
+  # batches = 0
   for inputs, labels in tqdm(dl):
     inputs, labels = inputs.to(device), labels.to(device)
     # get class index and corresponding activations !
@@ -67,9 +67,9 @@ def get_activations(model, dl, device, bs=1):
     for i in range(len(labels)):
       label = labels[i].item()
       class_activations[label].append(activations[i])
-    batches += 1
-    if batches == 100:
-      break
+    # batches += 1
+    # if batches == 100:
+    #   break
     
 
   print("Class Activations obtained.")
