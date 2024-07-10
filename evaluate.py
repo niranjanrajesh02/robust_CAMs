@@ -77,7 +77,7 @@ def main():
     assert args.l_constraint is not None, "Constraint type not provided for adversarial evaluation"
 
   print("\n\n=============================================")
-  print(f"Dataset: {args.dataset}, Model Type: {args.model_type}, Epsilon: {args.eps}")
+  print(f"Dataset: {args.dataset}, Model: {args.model_arch}, Model Type: {args.model_type}, L_Constraint: {args.l_constraint if args.adv_evaluate else 'None'}")
   print("=============================================")
 
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -134,7 +134,7 @@ def main():
   if not os.path.exists(save_path):
     os.makedirs(save_path)
 
-  print("Classwise Accuracies: ", class_accuracies)
+  # print("Classwise Accuracies: ", class_accuracies)
   with open(f'./{save_path}/classwise_acc_{args.l_constraint}.pkl', 'wb') as f:
     pickle.dump(class_accuracies, f)
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p gpu_a100_8
+#SBATCH -p gpu_v100_2
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --mem 20G
@@ -11,8 +11,8 @@
 
 
 srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_arch resnet50 --model_type standard --adv_evaluate False 
-srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_arch resnet50 --model_type standard --adv_evaluate True --l_constraint l2
-srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_arch resnet50 --model_type standard --adv_evaluate True --l_constraint linf 
+#srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_arch resnet50 --model_type standard --adv_evaluate True --l_constraint l2
+#srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_arch resnet50 --model_type standard --adv_evaluate True --l_constraint linf 
 
 
 
