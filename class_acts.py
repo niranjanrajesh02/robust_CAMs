@@ -54,6 +54,7 @@ def get_activations(model, dl, device, bs=1):
 
   print("Getting Class Activations ...")
 
+  batches = 0
   for inputs, labels in tqdm(dl):
     inputs, labels = inputs.to(device), labels.to(device)
     # get class index and corresponding activations !
@@ -66,7 +67,9 @@ def get_activations(model, dl, device, bs=1):
     for i in range(len(labels)):
       label = labels[i].item()
       class_activations[label].append(activations[i])
-    
+    batches += 1
+    if batches == 10:
+      break
     
 
   print("Class Activations obtained.")
@@ -74,7 +77,7 @@ def get_activations(model, dl, device, bs=1):
   for key in class_activations:
     class_activations[key] = np.array(class_activations[key])
     # print(f"Class {key} Activations Shape: ", class_activations[key].shape)
-
+  print("Finished getting class activations")
   return class_activations
 
 def estimate_manifold_dim(model_ext, dataset_name='imagenet', data_split='val'):
