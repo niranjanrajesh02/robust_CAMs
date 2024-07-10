@@ -41,7 +41,7 @@ def get_layer_accs(model, input):
   
   with autocast():
     _ = model(input)
-    
+
   h1.remove()
   # print("Activations shape:", acts.shape)
   activations_arr = np.array(activations[0])
@@ -54,7 +54,7 @@ def get_activations(model, dl, device, bs=1):
 
   print("Getting Class Activations ...")
 
-
+  batches = 0
   for inputs, labels in tqdm(dl):
     inputs, labels = inputs.to(device), labels.to(device)
     # get class index and corresponding activations !
@@ -67,7 +67,9 @@ def get_activations(model, dl, device, bs=1):
     for i in range(len(labels)):
       label = labels[i].item()
       class_activations[label].append(activations[i])
-
+    batches += 1
+    if batches == 100:
+      break
     
 
   print("Class Activations obtained.")
