@@ -23,7 +23,7 @@ def get_dataloader(ds_name='imagenet', split='val', bs=32):
   ])
 
   dataset = ImageFolder(root=data_path, transform=transform)
-  loader = DataLoader(dataset, batch_size=bs, shuffle=True, num_workers=1)
+  loader = DataLoader(dataset, batch_size=bs, shuffle=True, num_workers=4)
 
   return loader
 

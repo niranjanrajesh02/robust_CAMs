@@ -12,7 +12,7 @@ from _utils.model import get_model
 from _utils.data import get_dataloader
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-
+from torch.cuda.amp import autocast
 
 def get_layer_accs(model, input):
   activations = []
@@ -38,11 +38,11 @@ def get_layer_accs(model, input):
   model.eval()
   for param in model.parameters():
     param.requires_grad = False
-   
-  _ = model(input) # forward pass, activations are stored by the hook
-
+  
+  with autocast():
+    _ = model(input)
+    
   h1.remove()
-  acts = np.array(activations)
   # print("Activations shape:", acts.shape)
   activations_arr = np.array(activations[0])
   return activations_arr
@@ -54,7 +54,7 @@ def get_activations(model, dl, device, bs=1):
 
   print("Getting Class Activations ...")
 
-  batches = 0
+
   for inputs, labels in tqdm(dl):
     inputs, labels = inputs.to(device), labels.to(device)
     # get class index and corresponding activations !
@@ -67,15 +67,13 @@ def get_activations(model, dl, device, bs=1):
     for i in range(len(labels)):
       label = labels[i].item()
       class_activations[label].append(activations[i])
-    batches += 1
-    if batches == 10:
-      break
+
     
 
   print("Class Activations obtained.")
 
   for key in class_activations:
-    class_activations[key] = np.array(class_activations[key])
+    class_activations[key] = np.array(class_activations[key], dtype=np.float16)
     # print(f"Class {key} Activations Shape: ", class_activations[key].shape)
   print("Finished getting class activations")
   return class_activations
