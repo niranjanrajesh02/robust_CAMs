@@ -34,7 +34,7 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
     if eps != 0: # Adversarial Evaluation
       inputs = inputs.detach().cpu().numpy().astype(np.float32)
       labels = labels.detach().cpu().numpy().astype(np.float32)
-      adv_input = attack.generate(x=inputs, y=labels)
+      adv_input = attack(x=inputs, y=labels)
       output = model.predict(adv_input)
       # print(adv_input.shape, output.shape)
       # print(labels.shape)
