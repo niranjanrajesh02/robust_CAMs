@@ -31,15 +31,17 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
   print("Getting Classwise Accuracy for epsilon: ", eps)
 
   for inputs, labels in tqdm(test_loader):
-    if eps != 0: # Adversarial Evaluation
+    if eps != 0: #* Adversarial Evaluation
       inputs = inputs.detach().cpu().numpy().astype(np.float32)
       labels = labels.detach().cpu().numpy().astype(np.float32)
-      adv_input = attack(x=inputs, y=labels)
+      adv_input,_,_ = attack(model, inputs, labels, epsilons=[eps])
+      adv_input = adv_input[0]
       output = model.predict(adv_input)
       # print(adv_input.shape, output.shape)
       # print(labels.shape)
       preds = np.argmax(output, axis=1)
-    else: # Standard Evaluation
+
+    else: #* Standard Evaluation
       # inputs = inputs.detach().cpu().numpy().astype(np.float32)
       # labels = labels.detach().cpu().numpy().astype(np.float32)
       output = model(inputs)

@@ -1,9 +1,4 @@
 import foolbox as fb
-import numpy as np
-from art.attacks.evasion import ProjectedGradientDescent
-from art.estimators.classification import PyTorchClassifier
-import torch.nn as nn
-import torch.optim as optim
 
 def prepare_attack(model, attack_params):
     preprocessing = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], axis=-3)
@@ -21,6 +16,6 @@ def prepare_attack(model, attack_params):
       attack = fb.attacks.LinfPGD(steps=iterations, abs_stepsize=step_size, random_start=True)
 
       
-      return fmodel, attack
+    return fmodel, attack
 
  
