@@ -31,37 +31,21 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
   print("Getting Classwise Accuracy for epsilon: ", eps)
 
   for inputs, labels in tqdm(test_loader):
-    
-    if model_type != 'vone_resnet': # Foolbox Model
-      inputs, labels = inputs.to(device), labels.to(device)
-      if eps != 0:
-        img_adv, _, _ = attack(model, inputs, labels, epsilons=[eps])
-        # Generate adversarial examples
-        img_adv = img_adv[0]
-        outputs = model(img_adv)
-        preds = torch.argmax(outputs, dim=1)
-      
-      else:
-        outputs = model(inputs)
-        preds = torch.argmax(outputs, dim=1)
-      
-    else: # ART Model
-      if eps != 0:
-        inputs = inputs.detach().cpu().numpy().astype(np.float32)
-        labels = labels.detach().cpu().numpy().astype(np.float32)
-        adv_input = attack.generate(x=inputs, y=labels)
-        output = model.predict(adv_input)
-        # print(adv_input.shape, output.shape)
-        # print(labels.shape)
-        preds = np.argmax(output, axis=1)
-      else:
-        inputs = inputs.detach().cpu().numpy().astype(np.float32)
-        labels = labels.detach().cpu().numpy().astype(np.float32)
-        output = model.predict(inputs)
-        preds = np.argmax(output, axis=1)
+    if eps != 0: # Adversarial Evaluation
+      inputs = inputs.detach().cpu().numpy().astype(np.float32)
+      labels = labels.detach().cpu().numpy().astype(np.float32)
+      adv_input = attack.generate(x=inputs, y=labels)
+      output = model.predict(adv_input)
+      # print(adv_input.shape, output.shape)
+      # print(labels.shape)
+      preds = np.argmax(output, axis=1)
+    else: # Standard Evaluation
+      inputs = inputs.detach().cpu().numpy().astype(np.float32)
+      labels = labels.detach().cpu().numpy().astype(np.float32)
+      output = model.predict(inputs)
+      preds = np.argmax(output, axis=1)
 
-
-
+    # classwise accuracy calculation
     for i in range(len(labels)):
         label = int(labels[i])
         pred = int(preds[i])
@@ -76,18 +60,22 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('--model_name', type=str, help='Name of the model to evaluate', default='resnet50')
+  parser.add_argument('--model_arch', type=str, help='Name of the model to evaluate', default='resnet50')
   parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained', default='standard')
-  parser.add_argument('--eps', type=float, help='Epsilon value for adversarial training', default=0)
+  parser.add_argument('--adv_evaluate', type=bool, help='Adversarially Evaluate trained model', default=False)
+  parser.add_argument('--l_constraint', type=str, help='Type of constraint: l2, linf', default=None)
   parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='imagenet')
   args = parser.parse_args()
   args.dataset = args.dataset.lower()
 
   assert args.dataset in ['imagenet'], "Invalid dataset" 
   assert args.model_type in ['standard', 'adv_trained'], "Invalid model type"
-  assert args.eps >= 0, "Invalid epsilon value"
-  assert args.model_name in ['resnet18', 'resnet50', 'densenet161', 'vgg16_bn', 'wide_resnet50_2'], "Model not supported"
+  assert args.model_arch in ['resnet18', 'resnet50', 'densenet161', 'vgg16_bn', 'wide_resnet50_2'], "Model not supported"
+  assert args.l_constraint in ['l2', 'linf', None], "Invalid constraint type"
   
+  if args.adv_evaluate:
+    assert args.l_constraint is not None, "Constraint type not provided for adversarial evaluation"
+
   print("\n\n=============================================")
   print(f"Dataset: {args.dataset}, Model Type: {args.model_type}, Epsilon: {args.eps}")
   print("=============================================")
@@ -98,24 +86,22 @@ def main():
   # * Loading the Model
   model_ext = ''
   model = None
-  model_short =  model_shorthands[args.model_name]
+  model_short =  model_shorthands[args.model_arch]
 
   if args.model_type == 'adv_trained':
     model_ext = f'{model_short}_adv'
-    model = get_model(arch='resnet', dataset=args.dataset, train_mode='adv_trained', weights_path=model_path)
+    model = get_model(arch=args.model_arch, dataset=args.dataset, train_mode='adv_trained')
     model = model.to(device)
 
   elif args.model_type == 'standard':
     model_ext = f'{model_short}'
-    model = get_model(arch='resnet', dataset=args.dataset, train_mode='standard', weights_path=model_path)
+    model = get_model(arch=args.model_arch, dataset=args.dataset, train_mode='standard')
     model = model.to(device)
-
-
   assert model is not None, "Model not loaded successfully"
   model.eval()
-  val_loader = None
-  
+
   #* Loading the dataset
+  val_loader = None
   if args.dataset == 'imagenet':
     transform = transforms.Compose([
         transforms.Resize(256),
@@ -127,27 +113,32 @@ def main():
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=True, num_workers=1)
   
   # * Prepare the attack
-
-  attack_params = {'attack_type': 'L2_PGD', 'epsilon': args.eps, 'iterations': 7}
-  if args.model_type == 'vone_resnet':
-    fmodel, attack = prepare_art_attack(model, attack_params)
-    print("ART Model and Attack Prepared with params: ", attack_params)
-  else:
+  attack_params = None
+  if args.l_constraint == 'l2':
+    attack_params = {'attack_type': 'L2_PGD', 'epsilon': 3, 'iterations': 7}
     fmodel, attack = prepare_attack(model, attack_params)
-    print("Foolbox Model and Attack Prepared with params: ", attack_params)
+  elif args.l_constraint == 'linf':
+    attack_params = {'attack_type': 'Linf_PGD', 'epsilon': 8/255, 'iterations': 7}
+    fmodel, attack = prepare_attack(model, attack_params)
+  else:
+    attack_params = {'attack_type': 'None', 'epsilon': 0, 'iterations': 0}
+    fmodel = model
+    attack = None
+
+  print("Model and Attack Prepared with params: ", attack_params)
 
 
-  class_accuracies = get_classwise_acc(fmodel, attack, args.eps, val_loader, num_classes=1000, device=device, model_type=args.model_type)
+  class_accuracies = get_classwise_acc(fmodel, attack, attack_params['epsilon'], val_loader, num_classes=1000, device=device, model_type=args.model_type)
   
-  save_path= f'./{args.dataset}_r50{model_ext}_train'
+  save_path= f'./{args.dataset}_{model_ext}_train'
   if not os.path.exists(save_path):
     os.makedirs(save_path)
 
   print("Classwise Accuracies: ", class_accuracies)
-  # with open(f'./{save_path}/classwise_acc_e{args.eps}.pkl', 'wb') as f:
-  #   pickle.dump(class_accuracies, f)
+  with open(f'./{save_path}/classwise_acc_{args.l_constraint}.pkl', 'wb') as f:
+    pickle.dump(class_accuracies, f)
 
-  # print("Classwise Accuracies saved successfully to ", save_path)
+  print("Classwise Accuracies saved successfully to ", save_path)
   return
 
 if __name__ == '__main__':

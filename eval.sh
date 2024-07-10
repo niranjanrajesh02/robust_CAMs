@@ -10,7 +10,9 @@
 #SBATCH --gres=gpu:1
 
 
-srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_type standard --dataset imagenet --eps 0
+srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_arch resnet50 --model_type standard --adv_evaluate False 
+srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_arch resnet50 --model_type standard --adv_evaluate True --l_constraint l2
+srun python /home/venkat/niranjan/robust_CAMs/evaluate_art.py --model_arch resnet50 --model_type standard --adv_evaluate True --l_constraint linf 
 
 
 

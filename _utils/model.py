@@ -21,6 +21,16 @@ adv_trained_models = {
     "wide_resnet50_2": "wide_resnet50_2_l2_eps3.pt"
 }
 
+def clean_weights(weights_path, device):
+    weights = torch.load(weights_path, map_location=device)
+    all_w = [w for w in weights['model']]
+    state_dict = weights['model']
+    for w in all_w:
+        wt = state_dict.pop(w)
+        if w.startswith("module.attacker.model."):
+            state_dict[w[22:]] = wt
+    return state_dict
+
 def get_model(arch, dataset='imagenet', train_mode='standard',):
 
     assert arch in ['resnet18', 'resnet50', 'densenet161', 'vgg16_bn', 'wide_resnet50_2'], "Model not supported"
@@ -40,14 +50,8 @@ def get_model(arch, dataset='imagenet', train_mode='standard',):
         elif train_mode == 'adv_trained':
             # print working directory
             weights_path = f"./{adv_trained_models['resnet18']}"
+            state_dict = clean_weights(weights_path, device)
             model = resnet18(weights="DEFAULT")
-            weights = torch.load(weights_path, map_location=device)
-            all_w = [w for w in weights['model']]
-            state_dict = weights['model']
-            for w in all_w:
-                wt = state_dict.pop(w)
-                if w.startswith("module.attacker.model."):
-                    state_dict[w[22:]] = wt
             model.load_state_dict(state_dict)
             print("Adversarially Trained ResNet18 Loaded Successfully")
 
@@ -59,19 +63,40 @@ def get_model(arch, dataset='imagenet', train_mode='standard',):
             print("Standard ResNet50 Loaded Successfully")
           
         elif train_mode == 'adv_trained':
-            weights_path = f"./{adv_trained_models['resnet18']}"
+            weights_path = f"./{adv_trained_models['resnet50']}"
+            state_dict = clean_weights(weights_path, device)
             model = resnet50(weights="DEFAULT")
-            weights = torch.load(weights_path, map_location=device)
-            all_w = [w for w in weights['model']]
-            state_dict = weights['model']
-            for w in all_w:
-                wt = state_dict.pop(w)
-                if w.startswith("module.attacker.model."):
-                    state_dict[w[22:]] = wt
             model.load_state_dict(state_dict)
             print("Adversarially Trained ResNet50 Loaded Successfully")
 
+    elif arch == 'densenet161':
+        print("Loading DenseNet161 Model")
+        from torchvision.models import densenet161, DenseNet161_Weights
+        if train_mode == 'standard':
+            model = densenet161(weights=DenseNet161_Weights.DEFAULT)
+            print("Standard DenseNet161 Loaded Successfully")
+          
+        elif train_mode == 'adv_trained':
+            raise NotImplementedError("Adversarial Training not supported for DenseNet161")
 
-
+    elif arch == 'vgg16_bn':
+        print("Loading VGG16_BN Model")
+        from torchvision.models import vgg16_bn, VGG16_BN_Weights
+        if train_mode == 'standard':
+            model = vgg16_bn(weights=VGG16_BN_Weights.DEFAULT)
+            print("Standard VGG16_BN Loaded Successfully")
+          
+        elif train_mode == 'adv_trained':
+            raise NotImplementedError("Adversarial Training not supported for VGG16_BN")
+    
+    elif arch == 'wide_resnet50_2':
+        print("Loading Wide ResNet50_2 Model")
+        from torchvision.models import wide_resnet50_2, Wide_ResNet50_2_Weights
+        if train_mode == 'standard':
+            model = wide_resnet50_2(weights=Wide_ResNet50_2_Weights.DEFAULT)
+            print("Standard Wide ResNet50_2 Loaded Successfully")
+          
+        elif train_mode == 'adv_trained':
+            raise NotImplementedError("Adversarial Training not supported for Wide ResNet50_2")
 
     return model

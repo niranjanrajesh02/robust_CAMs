@@ -13,35 +13,14 @@ def prepare_attack(model, attack_params):
       step_size = eps / 5
       iterations = attack_params['iterations']
       attack = fb.attacks.L2PGD(steps=iterations, abs_stepsize=step_size, random_start=True)
-  
+
+    elif attack_params['attack_type'] == 'Linf_PGD':
+      eps = attack_params['epsilon'] # 8/255
+      step_size = eps / 5 
+      iterations = attack_params['iterations'] # 7
+      attack = fb.attacks.LinfPGD(steps=iterations, abs_stepsize=step_size, random_start=True)
+
+      
       return fmodel, attack
 
-    
-def prepare_art_attack(model, attack_params, arch='vone_resnet'):
-  assert arch in ['vone_resnet'], "Model not supported for ART attacks"
-
-  mean = np.array([0.5, 0.5, 0.5]).reshape((3, 1, 1))
-  std = np.array([0.5, 0.5, 0.5]).reshape((3, 1, 1))
-
-  classifier = PyTorchClassifier(
-            model=model,
-            clip_values=(0, 1),
-            preprocessing=(mean, std),
-            loss=nn.CrossEntropyLoss(),
-            optimizer=optim.SGD(model.parameters(), lr=0.01),
-            input_shape=(3, 224, 224),
-            nb_classes=1000,
-        )
-  attack = None
-  if attack_params['epsilon'] > 0:
-    attack = ProjectedGradientDescent(
-              estimator=classifier, 
-              norm= 2,
-              max_iter=attack_params['iterations'], 
-              eps=attack_params['epsilon'], 
-              eps_step= attack_params['epsilon'] / 5,
-              targeted=False,
-          )
-  
-
-  return classifier, attack
+ 
