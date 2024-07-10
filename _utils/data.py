@@ -10,11 +10,10 @@ def get_dataloader(ds_name='imagenet', split='val', bs=32):
   assert ds_name in ['imagenet'], "Dataset not supported"
   assert split in ['train', 'val'], "Split has to be either train or val"
 
-  data_path = f'/scratch/venkat/niranjan/data/{ds_name}/{split}'
+  data_path = f'/scratch/venkat/niranjan/{ds_name}/{split}'
 
   if not os.path.exists(data_path):
-    print("Invalid data path. If valid, redownload ImageNet Dataset")
-
+    raise ValueError("Data path does not exist. Please download the dataset")
 
   transform = transforms.Compose([
     transforms.Resize(256),

@@ -1,45 +1,52 @@
 #!/bin/bash
+#SBATCH -p compute
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH --mem 20G
+#SBATCH -t 1-23:59 # time (D-HH:MM)
+#SBATCH --job-name="extract_imagenet"
+#SBATCH -o extract_out.log
+#SBATCH -e extract_err.log
+#SBATCH --cpus-per-task=10
+
+
+
+cd /scratch/venkat/niranjan/imagenet
 #
-# script to extract ImageNet dataset
-# ILSVRC2012_img_train.tar (about 138 GB)
-# ILSVRC2012_img_val.tar (about 6.3 GB)
+# Extract the training data:
 #
-#  https://gist.github.com/BIGBALLON/8a71d225eff18d88e469e6ea9b39cef4
-# 
-#  train/
+# Create train directory; move .tar file; change directory
+
+mkdir train && mv ILSVRC2012_img_train.tar train/ && cd train
+# Extract training set; remove compressed file
+tar -xvf ILSVRC2012_img_train.tar && mv ILSVRC2012_img_train.tar ../ 
+#
+# At this stage imagenet/train will contain 1000 compressed .tar files, one for each category
+#
+# For each .tar file: 
+#   1. create directory with same name as .tar file
+#   2. extract and copy contents of .tar file into directory
+#   3. remove .tar file
+find . -name "*.tar" | while read NAME ; do mkdir -p "${NAME%.tar}"; tar -xvf "${NAME}" -C "${NAME%.tar}"; rm -f "${NAME}"; done
+#
+# This results in a training directory like so:
+#
+#  imagenet/train/
 #  ├── n01440764
 #  │   ├── n01440764_10026.JPEG
 #  │   ├── n01440764_10027.JPEG
 #  │   ├── ......
 #  ├── ......
-#  val/
-#  ├── n01440764
-#  │   ├── ILSVRC2012_val_00000293.JPEG
-#  │   ├── ILSVRC2012_val_00002138.JPEG
-#  │   ├── ......
-#  ├── ......
 #
-#
-# Download and extract the training data:
-#
-wget http://www.image-net.org/challenges/LSVRC/2012/nnoupb/ILSVRC2012_img_train.tar -o im_train.log
-wget http://www.image-net.org/challenges/LSVRC/2012/nnoupb/ILSVRC2012_img_val.tar -o im_val.log
-
-rm -f im_train.log im_val.log
-
-mkdir train && mv ILSVRC2012_img_train.tar train/ && cd train
-tar -xvf ILSVRC2012_img_train.tar && rm -f ILSVRC2012_img_train.tar
-find . -name "*.tar" | while read NAME ; do mkdir -p "${NAME%.tar}"; tar -xvf "${NAME}" -C "${NAME%.tar}"; rm -f "${NAME}"; done
-cd ..
+# Change back to original directory
+cd ../
 #
 # Extract the validation data and move images to subfolders:
 #
-mkdir val && mv ILSVRC2012_img_val.tar val/ && cd val && tar -xvf ILSVRC2012_img_val.tar
+# Create validation directory; move .tar file; change directory; extract validation .tar; remove compressed file
+mkdir val && mv ILSVRC2012_img_val.tar val/ && cd val 
+
+tar -xvf ILSVRC2012_img_val.tar && mv ILSVRC2012_img_val.tar ../
+
+# get script from soumith and run; this script creates all class directories and moves images into corresponding directories
 wget -qO- https://raw.githubusercontent.com/soumith/imagenetloader.torch/master/valprep.sh | bash
-#
-# Check total files after extract
-#
-#  $ find train/ -name "*.JPEG" | wc -l
-#  1281167
-#  $ find val/ -name "*.JPEG" | wc -l
-#  50000

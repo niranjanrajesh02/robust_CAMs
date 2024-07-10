@@ -117,7 +117,7 @@ def estimate_manifold_dim(model_ext, dataset_name='imagenet', data_split='val'):
   return class_dims_2nn, class_dims_pca
 
 def main():
-
+  # TODO : Add support for other archs
   parser = argparse.ArgumentParser(description='Get Class Activations')
   parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='imagenet')
   parser.add_argument('--arch', type=str, help='Model Architecture', default='resnet')
