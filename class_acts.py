@@ -119,7 +119,7 @@ def main():
   # TODO : Add support for other archs
   parser = argparse.ArgumentParser(description='Get Class Activations')
   parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='imagenet')
-  parser.add_argument('--arch', type=str, help='Model Architecture', default='resnet')
+  parser.add_argument('--model_arch', type=str, help='Model Architecture', default='resnet')
   parser.add_argument('--model_type', type=str, help='Type of model: standard, adv_trained or robust', default='standard')
   parser.add_argument('--task', type=str, help='Task to perform: acts or dims', default='acts')
   parser.add_argument('--data_split', type=str, help='Data split to use: train or val', default='val')
@@ -128,7 +128,7 @@ def main():
   args.dataset = args.dataset.lower()
   
   assert args.dataset in ['imagenet'], "Invalid dataset" 
-  assert args.arch in ['resnet', 'vone_resnet'], "Model not supported"
+  assert args.model_arch in ['resnet', 'vone_resnet'], "Model not supported"
   assert args.model_type in ['standard', 'adv_trained', 'robust'], "Invalid model type"
   assert args.task in ['acts', 'dims'], "Invalid task"
   assert args.data_split in ['train', 'val'], "Invalid data split"
@@ -142,21 +142,17 @@ def main():
     if args.task == 'acts':
       model_ext = model_short
       model = None
-      if args.arch == 'resnet':
-        if args.model_type == 'standard':
-          model = get_model(arch='resnet50', dataset=args.dataset, train_mode='standard').to(device)
-          model = model.to(device)
-
-        elif args.model_type == 'adv_trained':
-          model_ext = f'{model_short}_adv'
-          model = get_model(arch='resnet50', dataset=args.dataset, train_mode='adv_trained').to(device)
-          model = model.to(device)
-
-
-      if args.arch == 'vone_resnet50':
-       model_ext = '_vone'
-       model = get_model(arch='vone_resnet', dataset=args.dataset, train_mode='standard', weights_path=None).to(device)
       
+      if args.model_type == 'standard':
+        model = get_model(arch=args.model_arch, dataset=args.dataset, train_mode='standard').to(device)
+        model = model.to(device)
+
+      elif args.model_type == 'adv_trained':
+        model_ext = f'{model_short}_adv'
+        model = get_model(arch=args.model_arch, dataset=args.dataset, train_mode='adv_trained').to(device)
+        model = model.to(device)
+
+      assert model is not None, "Model not loaded successfully"
       model.eval()
 
       batch_size = 32
