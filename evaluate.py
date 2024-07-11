@@ -32,8 +32,9 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
 
   for inputs, labels in tqdm(test_loader):
     if eps != 0: #* Adversarial Evaluation
-      inputs = inputs.detach().cpu().numpy().astype(np.float32)
-      labels = labels.detach().cpu().numpy().astype(np.float32)
+      # inputs = inputs.detach().cpu().numpy().astype(np.float32)
+      # labels = labels.detach().cpu().numpy().astype(np.float32)
+      inputs, labels = inputs.to(device), labels.to(device)
       adv_input,_,_ = attack(model, inputs, labels, epsilons=[eps])
       adv_input = adv_input[0]
       output = model.predict(adv_input)

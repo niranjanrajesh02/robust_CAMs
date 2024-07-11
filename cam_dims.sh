@@ -10,6 +10,6 @@
 #SBATCH --gres=gpu:1
 
 
-srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --dataset imagenet --arch resnet --model_type standard --data_split train --task acts
+#srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --dataset imagenet --arch resnet --model_type standard --data_split train --task acts
 srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --dataset imagenet --arch resnet --model_type standard --data_split train --task dims
 

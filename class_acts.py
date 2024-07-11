@@ -8,7 +8,7 @@ import os
 import argparse
 import pickle
 from _utils.id_est import estimate_twonn_dim, estimate_pca_dim
-from _utils.model import get_model
+from _utils.model import get_model, model_shorthands
 from _utils.data import get_dataloader
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
@@ -82,42 +82,38 @@ def get_activations(model, dl, device, bs=1):
 
 def estimate_manifold_dim(model_ext, dataset_name='imagenet', data_split='val'):
   print("Estimating Manifold Dimension ...")
-  class_acts_file = f'./{dataset_name}_r50{model_ext}_train/class_acts_{data_split}.pkl'
+  class_acts_file = f'./{dataset_name}_{model_ext}_train/class_acts_{data_split}.pkl'
   print("Class Acts File: ", class_acts_file)
   # load class activations
   if os.path.exists(class_acts_file):
     with open(class_acts_file, 'rb') as f:
       class_activations = pickle.load(f)
+      print("Class Activations Loaded Successfully.")
   else:
     print("Class Activations File not found.")
     return
   
   class_dims_2nn = {i : 0 for i in range(1000)}
-  class_dims_pca = {i : 0 for i in range(1000)}
+  class_dims_pca90 = {i : 0 for i in range(1000)}
+  class_dims_pca95 = {i : 0 for i in range(1000)}
+  class_dims_pca99 = {i : 0 for i in range(1000)}
 
-  for key in tqdm(class_activations):
+
+  for key in tqdm(class_activations, desc="Estimating Dimensions"):
     acts = np.array(class_activations[key])
-    # print(f"Estimating manifold dimension for class {key} ...")
     id_2nn, _ = estimate_twonn_dim(acts)
-    id_pca = estimate_pca_dim(acts)
+    id_pca90 = estimate_pca_dim(acts, thresh=0.9)
+    id_pca95 = estimate_pca_dim(acts, thresh=0.95)
+    id_pca99 = estimate_pca_dim(acts, thresh=0.99)
 
     class_dims_2nn[key] = id_2nn
-    class_dims_pca[key] = id_pca
+    class_dims_pca90[key] = id_pca90
+    class_dims_pca95[key] = id_pca95
+    class_dims_pca99[key] = id_pca99
+
   
 
- 
-  # class_dims['all'] = 0
-  # # concatenate all class activations
-  # all_acts = [class_activations[key] for key in class_activations]
-  # all_acts = np.concatenate(all_acts, axis=0)
-  # print("Estimating manifold dimension for all classes with concatenated activations: ", all_acts.shape)
-  # id, _ = id_est.estimate_dim(all_acts)
-
-  # print("Estimated manifold dimension for all classes: ", id)
-  # class_dims['all'] = id
-  
-
-  return class_dims_2nn, class_dims_pca
+  return [class_dims_2nn, class_dims_pca90, class_dims_pca95, class_dims_pca99]
 
 def main():
   # TODO : Add support for other archs
@@ -138,20 +134,21 @@ def main():
   assert args.data_split in ['train', 'val'], "Invalid data split"
   
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  model_ext = ''
+  model = None
+  model_short =  model_shorthands[args.model_arch]
 
   if args.dataset == 'imagenet':    
     if args.task == 'acts':
-      model_ext = ''
+      model_ext = model_short
       model = None
       if args.arch == 'resnet':
         if args.model_type == 'standard':
-          model_path = f'./models/{args.dataset}_r50{model_ext}_train.pt'
           model = get_model(arch='resnet50', dataset=args.dataset, train_mode='standard').to(device)
           model = model.to(device)
 
         elif args.model_type == 'adv_trained':
-          model_ext = '_adv'
-          model_path = f'./models/resnet50_l2_eps3.pt'
+          model_ext = f'{model_short}_adv'
           model = get_model(arch='resnet50', dataset=args.dataset, train_mode='adv_trained').to(device)
           model = model.to(device)
 
@@ -177,18 +174,19 @@ def main():
       return
 
     elif args.task == 'dims':
-      model_ext = ''
-      if args.model_type == 'adv_trained': model_ext = '_adv'
-      elif args.model_type == 'vone_resnet': model_ext = '_vone'
+  
+      if args.model_type == 'adv_trained': model_ext = f'{model_short}_adv' 
+      else: model_ext = f'{model_short}'
 
-      class_dims_2nn, class_dims_pca =  estimate_manifold_dim(model_ext, dataset_name=args.dataset, data_split=args.data_split)
+      class_dims =  estimate_manifold_dim(model_ext, dataset_name=args.dataset, data_split=args.data_split)
 
-      with open(f'./{args.dataset}_r50{model_ext}_train/class_dims_2nn_{args.data_split}.pkl', 'wb') as f:
-        pickle.dump(class_dims_2nn, f)
-
-      with open(f'./{args.dataset}_r50{model_ext}_train/class_dims_pca_{args.data_split}.pkl', 'wb') as f:
-        pickle.dump(class_dims_pca, f)
-
+      save_path= f'./{args.dataset}_{model_ext}_train'
+      if not os.path.exists(save_path):
+        os.makedirs(save_path)
+      
+      with open(f'{save_path}/class_dims_{args.data_split}.pkl', 'wb') as f:
+        pickle.dump(class_dims, f)
+      
       print("Manifold Dimensions Saved Successfully.")
 
       return
