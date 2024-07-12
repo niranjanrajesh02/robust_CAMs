@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p gpu_a100_8
+#SBATCH -p compute
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --mem 20G
@@ -7,7 +7,8 @@
 #SBATCH --job-name="robCAM2_acts"
 #SBATCH -o cam2_out.log
 #SBATCH -e cam2_err.log
-#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=50
 
 
-srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --dataset imagenet --arch resnet --model_type adv_trained --data_split train --task acts
+srun python /home/venkat/niranjan/robust_CAMs/class_acts.py --dataset imagenet --model_arch resnet50 --model_type standard --data_split train --task wc_vars
+

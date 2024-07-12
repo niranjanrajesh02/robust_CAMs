@@ -38,15 +38,12 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
       adv_input,_,_ = attack(model, inputs, labels, epsilons=[eps])
       adv_input = adv_input[0]
       output = model(adv_input)
-      # print(adv_input.shape, output.shape)
-      # print(labels.shape)
-      preds = np.argmax(output, axis=1)
+      preds = torch.argmax(output, dim=1)
 
     else: #* Standard Evaluation
-      # inputs = inputs.detach().cpu().numpy().astype(np.float32)
-      # labels = labels.detach().cpu().numpy().astype(np.float32)
+      
       output = model(inputs)
-      preds = np.argmax(output.detach(), axis=1)
+      preds = torch.argmax(output, dim=1)
 
     # classwise accuracy calculation
     for i in range(len(labels)):
