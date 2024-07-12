@@ -37,7 +37,7 @@ def get_classwise_acc(model, attack, eps, test_loader, num_classes=1000, device=
       inputs, labels = inputs.to(device), labels.to(device)
       adv_input,_,_ = attack(model, inputs, labels, epsilons=[eps])
       adv_input = adv_input[0]
-      output = model.predict(adv_input)
+      output = model(adv_input)
       # print(adv_input.shape, output.shape)
       # print(labels.shape)
       preds = np.argmax(output, axis=1)

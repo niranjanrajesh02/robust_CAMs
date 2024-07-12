@@ -115,6 +115,32 @@ def estimate_manifold_dim(model_ext, dataset_name='imagenet', data_split='val'):
 
   return [class_dims_2nn, class_dims_pca90, class_dims_pca95, class_dims_pca99]
 
+
+def get_within_class_variance(model_ext, dataset_name='imagenet', data_split='val'):
+  print("Estimating Within Class Variance ...")
+  class_acts_file = f'./{dataset_name}_{model_ext}_train/class_acts_{data_split}.pkl'
+  print("Class Acts File: ", class_acts_file)
+  # load class activations
+  if os.path.exists(class_acts_file):
+    with open(class_acts_file, 'rb') as f:
+      class_activations = pickle.load(f)
+      print("Class Activations Loaded Successfully.")
+  else:
+    print("Class Activations File not found.")
+    return
+  
+  class_variances = {i : 0 for i in range(1000)}
+
+  for key in tqdm(class_activations, desc="Estimating Within Class Variance"):
+    acts = np.array(class_activations[key])
+    mean_acts = np.mean(acts, axis=0)
+    centered_acts = acts - mean_acts
+    class_cov = np.dot(centered_acts.T,centered_acts)/centered_acts.shape[0]
+    class_variances[key] = np.trace(class_cov)
+
+  return class_variances
+
+
 def main():
   # TODO : Add support for other archs
   parser = argparse.ArgumentParser(description='Get Class Activations')
@@ -128,9 +154,9 @@ def main():
   args.dataset = args.dataset.lower()
   
   assert args.dataset in ['imagenet'], "Invalid dataset" 
-  assert args.model_arch in ['resnet', 'vone_resnet'], "Model not supported"
+  assert args.model_arch in ['resnet50'], "Model not supported"
   assert args.model_type in ['standard', 'adv_trained', 'robust'], "Invalid model type"
-  assert args.task in ['acts', 'dims'], "Invalid task"
+  assert args.task in ['acts', 'dims', 'wc_vars'], "Invalid task"
   assert args.data_split in ['train', 'val'], "Invalid data split"
   
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -184,6 +210,23 @@ def main():
         pickle.dump(class_dims, f)
       
       print("Manifold Dimensions Saved Successfully.")
+
+      return
+
+    elif args.task == 'wc_vars':
+      if args.model_type == 'adv_trained': model_ext = f'{model_short}_adv' 
+      else: model_ext = f'{model_short}'
+
+      class_variances = get_within_class_variance(model_ext, dataset_name=args.dataset, data_split=args.data_split)
+
+      save_path= f'./{args.dataset}_{model_ext}_train'
+      if not os.path.exists(save_path):
+        os.makedirs(save_path)
+      
+      with open(f'{save_path}/class_wc_var_{args.data_split}.pkl', 'wb') as f:
+        pickle.dump(class_variances, f)
+      
+      print("Within Class Variances Saved Successfully.")
 
       return
 
