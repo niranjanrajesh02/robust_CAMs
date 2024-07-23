@@ -65,6 +65,7 @@ def main():
   parser.add_argument('--adv_evaluate', type=bool, help='Adversarially Evaluate trained model', default=False)
   parser.add_argument('--l_constraint', type=str, help='Type of constraint: l2, linf', default=None)
   parser.add_argument('--dataset', type=str, help='Dataset to use (cifar, restricted_imagenet, imagenet)', default='imagenet')
+  parser.add_argument('--data_split', type=str, help='Data split to use for evaluation', default='val')
   args = parser.parse_args()
   args.dataset = args.dataset.lower()
 
@@ -72,6 +73,7 @@ def main():
   assert args.model_type in ['standard', 'adv_trained'], "Invalid model type"
   assert args.model_arch in ['resnet18', 'resnet50', 'densenet161', 'vgg16_bn', 'wide_resnet50_2'], "Model not supported"
   assert args.l_constraint in ['l2', 'linf', None], "Invalid constraint type"
+  assert args.data_split in ['train', 'val'], "Invalid data split"
   
   if args.adv_evaluate:
     assert args.l_constraint is not None, "Constraint type not provided for adversarial evaluation"
@@ -101,9 +103,9 @@ def main():
   model.eval()
 
   #* Loading the dataset
-  val_loader = None
+  loader = None
   if args.dataset == 'imagenet':
-    val_loader = get_dataloader(ds_name='imagenet', split='val', bs=32)
+    loader = get_dataloader(ds_name='imagenet', split=args.data_split, bs=32)
   
   # * Prepare the attack
   attack_params = None
@@ -120,15 +122,15 @@ def main():
 
   print("Model and Attack Prepared with params: ", attack_params)
 
-
-  class_accuracies = get_classwise_acc(fmodel, attack, attack_params['epsilon'], val_loader, num_classes=1000, device=device, model_type=args.model_type)
+  class_accuracies = get_classwise_acc(fmodel, attack, attack_params['epsilon'], loader, num_classes=1000, device=device, model_type=args.model_type)
   
   save_path= f'./{args.dataset}_{model_ext}_train'
+  
   if not os.path.exists(save_path):
     os.makedirs(save_path)
 
   # print("Classwise Accuracies: ", class_accuracies)
-  with open(f'./{save_path}/classwise_acc_{args.l_constraint}.pkl', 'wb') as f:
+  with open(f'./{save_path}/classwise_acc_{args.data_split}_{args.l_constraint}.pkl', 'wb') as f:
     pickle.dump(class_accuracies, f)
 
   print("Classwise Accuracies saved successfully to ", save_path)
