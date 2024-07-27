@@ -12,7 +12,8 @@
 
 # srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_arch resnet50 --model_type standard 
 # srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_arch resnet50 --model_type standard --adv_evaluate True --l_constraint l2
-srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_arch resnet50 --model_type standard --adv_evaluate True --l_constraint linf 
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_arch resnet50 --model_type standard --adv_evaluate False --data_split train 
+srun python /home/venkat/niranjan/robust_CAMs/evaluate.py --model_arch resnet50 --model_type standard --adv_evaluate False --data_split val 
 
 
 
